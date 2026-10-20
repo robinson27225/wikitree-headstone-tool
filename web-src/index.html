@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headstone Photo Tool</title>
+<link rel="stylesheet" href="style.css?v=__VERSION__">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/">Headstone Photo Tool</a>
+  <nav id="topnav"></nav>
+</header>
+<main id="app"><p class="muted">Loading…</p></main>
+<footer class="foot">Version __VERSION__ · Runs in your browser: your photos and worklist stay on this computer. Only the names and dates you look up are sent to WikiTree. · <a href="THIRD-PARTY.txt">Software used</a></footer>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<script>
+  // For testing away from wikitree.com, ?api=/wtapi sends WikiTree lookups through a local proxy (see scripts/serve-web.js)
+  window.HW_CONFIG = { apiBase: new URLSearchParams(location.search).get('api') || undefined };
+</script>
+<script src="lib/md5.js?v=__VERSION__"></script>
+<script src="lib/parse.js?v=__VERSION__"></script>
+<script src="lib/ocr_merge.js?v=__VERSION__"></script>
+<script src="lib/wikitree.js?v=__VERSION__"></script>
+<script src="lib/photoref.js?v=__VERSION__"></script>
+<script src="lib/plotmap.js?v=__VERSION__"></script>
+<script src="lib/categories.js?v=__VERSION__"></script>
+<script src="lib/citation.js?v=__VERSION__"></script>
+<script src="lib/core.js?v=__VERSION__"></script>
+<script src="lib/routes.js?v=__VERSION__"></script>
+<script src="web.js?v=__VERSION__"></script>
+<script src="app.js?v=__VERSION__"></script>
+</body>
+</html>

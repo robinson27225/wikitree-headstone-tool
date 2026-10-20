@@ -1,0 +1,25 @@
+{
+  "name": "headstone-photo-tool",
+  "version": "0.1.0",
+  "description": "Reads headstone photos (names, dates, GPS) into a worklist for creating WikiTree profiles. Mac version and browser version.",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "./start.sh",
+    "test": "node test/parse.test.js && node test/merge.test.js && node test/categories.test.js",
+    "build:web": "node scripts/build-web.js",
+    "serve:web": "node scripts/serve-web.js"
+  },
+  "dependencies": {
+    "@gutenye/ocr-node": "^1.4.9"
+  },
+  "devDependencies": {
+    "@gutenye/ocr-browser": "^1.4.9",
+    "esbuild": "^0.28.2",
+    "exifr": "^7.1.3",
+    "heic2any": "^0.0.4"
+  }
+}
