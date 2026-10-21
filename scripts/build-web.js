@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 'use strict';
-// Builds web/, the browser version, ready to upload to a static host such as the WikiTree Apps server.
+// Builds headstone-tool/, the browser version, ready to upload to a static host such as the WikiTree Apps server.
 //   npm install && npm run build:web
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
-const out = path.join(root, 'web');
+const out = path.join(root, 'headstone-tool');
 const nm = (p) => path.join(root, 'node_modules', p);
 const version = require(path.join(root, 'package.json')).version;
 
@@ -48,4 +48,4 @@ lines.push('', 'The text-reading models are PaddleOCR PP-OCRv4 (Apache License 2
 fs.writeFileSync(path.join(out, 'THIRD-PARTY.txt'), lines.join('\n') + '\n');
 
 const size = (d) => fs.readdirSync(d, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? size(path.join(d, e.name)) : fs.statSync(path.join(d, e.name)).size), 0);
-console.log(`web/ built (version ${version}, ${(size(out) / 1e6).toFixed(1)} MB). Upload its contents.`);
+console.log(`headstone-tool/ built (version ${version}, ${(size(out) / 1e6).toFixed(1)} MB). Upload its contents.`);

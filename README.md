@@ -5,7 +5,7 @@ each person, builds the Monumental inscription source citation, and prepares an 
 
 Two versions share the same code for everything except reading the photos and storing the data:
 
-| | Mac version (`./start.sh`) | Browser version (`web/`) |
+| | Mac version (`./start.sh`) | Browser version (`headstone-tool/`) |
 | --- | --- | --- |
 | Runs | a small local server on your Mac | in the web page; upload it to a static host such as the WikiTree Apps server |
 | Photos come from | a Photos album or a folder | files you choose (JPEG, PNG, HEIC) |
@@ -79,7 +79,7 @@ The generated table was checked against the map app's own table reader.
 
 ## Browser version
 
-`npm install` then `npm run build:web` builds `web/` (about 42 MB: PaddleOCR's models, the WebAssembly runtime, OpenCV.js and the
+`npm install` then `npm run build:web` builds `headstone-tool/` (about 42 MB: PaddleOCR's models, the WebAssembly runtime, OpenCV.js and the
 page). Upload its contents to any static host; all paths are relative, so any folder works (for example
 `apps/robinson27225/headstone-photo-tool/`). To try it first:
 

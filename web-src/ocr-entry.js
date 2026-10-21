@@ -1,4 +1,4 @@
-// Bundled to web/vendor/ocr-web.js: PaddleOCR (PP-OCRv4) in the browser through ONNX Runtime Web.
+// Bundled to headstone-tool/vendor/ocr-web.js: PaddleOCR (PP-OCRv4) in the browser through ONNX Runtime Web.
 import Ocr from '@gutenye/ocr-browser';
 import * as ort from 'onnxruntime-web'; // aliased to the WebAssembly-only build at bundle time
 

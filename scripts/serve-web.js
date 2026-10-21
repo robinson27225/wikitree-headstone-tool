@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 'use strict';
-// Serves web/ for testing on http://localhost:8790. WikiTree's API only answers pages on wikitree.com, so lookups from
+// Serves headstone-tool/ for testing on http://localhost:8790. WikiTree's API only answers pages on wikitree.com, so lookups from
 // localhost go through /wtapi here (open http://localhost:8790/?api=/wtapi). Not needed on the apps server.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const root = path.join(__dirname, '..', 'web');
+const root = path.join(__dirname, '..', 'headstone-tool');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.wasm': 'application/wasm', '.txt': 'text/plain; charset=utf-8', '.onnx': 'application/octet-stream' };
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');

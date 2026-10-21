@@ -2,4 +2,4 @@ data/
 helper/headstone_ocr
 node_modules/
 .DS_Store
-web/
+headstone-tool/
