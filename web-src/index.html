@@ -12,12 +12,13 @@
   <nav id="topnav"></nav>
 </header>
 <main id="app"><p class="muted">Loading…</p></main>
-<footer class="foot">Version __VERSION__ · Runs in your browser: your photos and worklist stay on this computer. Only the names and dates you look up are sent to WikiTree. · <a href="THIRD-PARTY.txt">Software used</a></footer>
+<footer class="foot">Version __VERSION__ · Runs in your browser: your photos and worklist stay on this computer. Only the names and dates you look up are sent to WikiTree, and a photo's GPS position to OpenStreetMap to find the cemetery (map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>). · <a href="THIRD-PARTY.txt">Software used</a></footer>
 <div id="toast" role="status" aria-live="polite"></div>
 <dialog id="dlg"></dialog>
 <script>
-  // For testing away from wikitree.com, ?api=/wtapi sends WikiTree lookups through a local proxy (see scripts/serve-web.js)
-  window.HW_CONFIG = { apiBase: new URLSearchParams(location.search).get('api') || undefined };
+  // For testing away from wikitree.com, ?api=/wtapi (and &overpass=/overpass&nominatim=/nominatim) send lookups through a local proxy (see scripts/serve-web.js)
+  const q = new URLSearchParams(location.search);
+  window.HW_CONFIG = { apiBase: q.get('api') || undefined, overpass: q.get('overpass') || undefined, nominatim: q.get('nominatim') || undefined, nominatimSearch: q.get('nominatimSearch') || undefined };
 </script>
 <script src="lib/md5.js?v=__VERSION__"></script>
 <script src="lib/parse.js?v=__VERSION__"></script>
@@ -26,6 +27,7 @@
 <script src="lib/photoref.js?v=__VERSION__"></script>
 <script src="lib/plotmap.js?v=__VERSION__"></script>
 <script src="lib/categories.js?v=__VERSION__"></script>
+<script src="lib/places.js?v=__VERSION__"></script>
 <script src="lib/citation.js?v=__VERSION__"></script>
 <script src="lib/core.js?v=__VERSION__"></script>
 <script src="lib/routes.js?v=__VERSION__"></script>

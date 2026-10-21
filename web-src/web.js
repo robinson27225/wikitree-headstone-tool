@@ -173,11 +173,16 @@
     (async () => {
       try {
         job.total = files.length;
-        const name = (cemetery && cemetery.name) || `Photos ${new Date().toLocaleDateString()}`;
+        const name = (cemetery && cemetery.name) || `Photos ${new Date().toLocaleDateString()}`; // renamed to the cemetery once it is found
         const batch = { id: id(), name, source: 'browser', cemetery: { name: '', space: '', city: '', county: '', state: '', country: db.settings.defaultCountry, ...cemetery }, createdAt: new Date().toISOString() };
         db.batches.push(batch);
         save();
         for (const f of files) { job.current = f.name; await processFile(f, batch, job, { checkWikiTree }); job.done++; }
+        if (!batch.cemetery.name) {
+          job.current = "Finding the cemetery from the photos' GPS…";
+          const r = await HW.core.findCemeteryFromGps(ctx, batch);
+          job.log.push(r.found ? `Cemetery found from GPS: ${batch.cemetery.name}, ${batch.cemetery.city}` : r.notes[0]);
+        }
         job.status = 'done';
       } catch (e) { job.status = 'error'; job.error = e.message; }
       job.current = '';

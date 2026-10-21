@@ -20,7 +20,7 @@ fs.writeFileSync(path.join(out, 'index.html'), fs.readFileSync(path.join(root, '
 copy(path.join(root, 'public/style.css'), 'style.css');
 copy(path.join(root, 'public/app.js'), 'app.js');
 copy(path.join(root, 'web-src/web.js'), 'web.js');
-for (const f of ['md5', 'parse', 'ocr_merge', 'wikitree', 'photoref', 'plotmap', 'categories', 'citation', 'core', 'routes']) copy(path.join(root, `lib/${f}.js`), `lib/${f}.js`);
+for (const f of ['md5', 'parse', 'ocr_merge', 'wikitree', 'photoref', 'plotmap', 'categories', 'places', 'citation', 'core', 'routes']) copy(path.join(root, `lib/${f}.js`), `lib/${f}.js`);
 
 // PaddleOCR in the browser: one bundle (ONNX Runtime Web + OpenCV.js + the OCR pipeline), the WebAssembly runtime, the models
 execFileSync(path.join(root, 'node_modules/.bin/esbuild'), [

@@ -202,6 +202,7 @@ async function renderPerson(id) {
       <div class="card"><h2>Monumental inscription source</h2>
         <pre class="cite" id="cite">${esc(d.citation)}</pre>
         <div class="row"><button class="primary small" id="copycite">Copy citation</button><span class="muted" style="font-size:12px">Paste into the Sources section of the profile.</span></div>
+        ${S.settings.photographer && S.settings.photographer.name ? '' : '<p class="flags" style="margin:8px 0 0;font-size:13px">Add your name and WikiTree ID under Settings to get "Photographed by: …" in the citation.</p>'}
       </div>
     </div>
   </div>
@@ -268,7 +269,16 @@ function cemFields(c = {}) {
 const readCem = (root) => Object.fromEntries([...root.querySelectorAll('[data-c]')].map((e) => [e.dataset.c, e.value.trim()]));
 
 function batchDialog(batch) {
-  const d = openDialog(`<h2>Cemetery for “${esc(batch.name)}”</h2>${cemFields(batch.cemetery)}<div class="row"><button class="small" id="findcat">Look up category on WikiTree</button><span class="muted" id="findmsg" style="font-size:12px">Uses the Space page above, or profiles from this album already on WikiTree.</span></div><div class="actions"><button id="x">Cancel</button><button class="primary" id="ok">Save</button></div>`);
+  const d = openDialog(`<h2>Cemetery for “${esc(batch.name)}”</h2>${cemFields(batch.cemetery)}<div class="row" style="margin-bottom:6px"><button class="small" id="findgps">Find cemetery from photo GPS</button><span class="muted" id="gpsmsg" style="font-size:12px">Fills in the name, town, county, state and WikiTree Space page.</span></div><div class="row"><button class="small" id="findcat">Look up category on WikiTree</button><span class="muted" id="findmsg" style="font-size:12px">Uses the Space page above, or profiles from this album already on WikiTree.</span></div><div class="actions"><button id="x">Cancel</button><button class="primary" id="ok">Save</button></div>`);
+  $('#findgps', d).onclick = async () => {
+    $('#gpsmsg', d).textContent = 'Looking…';
+    try {
+      const r = await api(`/api/batches/${batch.id}/find-cemetery`, { force: true });
+      const c = r.cemetery || {};
+      for (const k of ['name', 'space', 'city', 'county', 'state', 'country']) if (c[k] && $('#c-' + k, d)) $('#c-' + k, d).value = c[k];
+      $('#gpsmsg', d).textContent = (r.found ? 'Found. ' : '') + (r.notes || []).join(' ');
+    } catch (e) { $('#gpsmsg', d).textContent = e.message; }
+  };
   $('#findcat', d).onclick = async () => {
     $('#findmsg', d).textContent = 'Looking…';
     try {
@@ -328,13 +338,14 @@ function importDialog() {
   const d = openDialog(`<h2>Import headstone photos</h2>
     <div class="grid2">${sourceHtml}
     </div>
-    <h2 style="margin-top:6px">Cemetery</h2>${cemFields({ country: S.settings.defaultCountry })}
+    <h2 style="margin-top:6px">Cemetery</h2>
+    <p class="muted" style="margin:0 0 6px;font-size:13px">Leave the cemetery name blank to find it from the photos' GPS (OpenStreetMap, then WikiTree). Fill it in to use your own.</p>${cemFields({ country: S.settings.defaultCountry })}
     <label style="color:inherit"><input type="checkbox" id="i-wt" checked style="width:auto"> Check WikiTree for each person after reading</label>
     <div id="prog" hidden><div class="progress"><div></div></div><div id="cur" class="muted"></div><div class="log"></div></div>
     <div class="actions"><button id="x">Cancel</button><button class="primary" id="go">Import</button></div>`);
   if (!WEB) {
     const sel = $('#i-album', d);
-    api('/api/albums').then((r) => { sel.innerHTML = r.albums.map((a) => `<option>${esc(a)}</option>`).join('') || '<option value="">(no albums)</option>'; const t = r.albums.find((a) => /fairmont/i.test(a)); if (t) { sel.value = t; $('#c-name', d).value ||= 'Fairmont Cemetery'; } })
+    api('/api/albums').then((r) => { sel.innerHTML = r.albums.map((a) => `<option>${esc(a)}</option>`).join('') || '<option value="">(no albums)</option>'; })
       .catch((e) => { sel.innerHTML = `<option value="">${esc(e.message)}</option>`; });
     d.querySelectorAll('[name=kind]').forEach((r) => (r.onchange = () => { const album = d.querySelector('[name=kind]:checked').value === 'album'; $('#src-album', d).hidden = !album; $('#src-folder', d).hidden = album; }));
     $('#choose', d).onclick = async () => { const r = await api('/api/choose-folder', {}); if (r.path) $('#i-folder', d).value = r.path; };
@@ -386,6 +397,7 @@ async function plotDialog() {
       : `<span class="badge ok">Page exists and has both categories</span>`;
     body.innerHTML = `
       ${r.warnings.length ? `<div class="card" style="background:var(--warn-bg);color:var(--warn)"><b>Before you publish</b><ul style="margin:6px 0 0 18px;padding:0">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>` : ''}
+      ${r.cemetery && r.cemetery.name ? `<p class="muted" style="margin:0 0 8px">Cemetery: <b>${esc([r.cemetery.name, r.cemetery.city, r.cemetery.county, r.cemetery.state].filter(Boolean).join(', '))}</b>${r.cemetery.gpsSource ? ` · found from the photos' GPS (${esc(r.cemetery.gpsSource.replace(/\s*\(.*\)/, ''))})` : ''}</p>` : '<p class="muted" style="margin:0 0 8px">No cemetery is set and none could be found from the photos\' GPS.</p>'}
       <h2>1. Space page</h2>
       <p style="margin:0 0 6px">${pageNote}</p>
       <p style="margin:0 0 6px">Create or edit <a target="_blank" rel="noopener" href="${esc(r.pageUrl)}"><b>Space:${esc(r.title.replace(/ /g, '_'))}</b> ↗</a> and paste the table below into it.</p>

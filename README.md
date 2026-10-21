@@ -27,7 +27,11 @@ Without it the tool works with Apple Vision alone.
 ## Workflow
 
 1. **Import photos…** Pick a Photos album (the first time, allow Automation access to Photos) or a folder.
-   Fill in the cemetery (name, WikiTree Space page, city, county, state, country). It applies to the whole album.
+   The cemetery applies to the whole album. Leave its name blank and the tool finds it from the photos' GPS: the cemetery's name
+   and outline from OpenStreetMap (Overpass, with Nominatim as a fallback when Overpass is busy), then the town, county and state,
+   then the WikiTree Space page if WikiTree has one at the usual address (`Name_Town_ST_USA`). Or type it in yourself. **Find
+   cemetery from photo GPS** in the cemetery dialog re-runs it. Only the position goes to OpenStreetMap; map data © OpenStreetMap
+   contributors (ODbL).
 2. Each photo is read for text and its EXIF GPS and date taken. Apple Vision reads it once and, if installed, PaddleOCR reads it
    at three image sizes (its mistakes change with size). The readings are combined by voting letter by letter, so a letter
    that one reading got wrong is outvoted. Lines the readings disagree on are shown under "Text read from the photo" on the
@@ -44,7 +48,8 @@ Without it the tool works with Apple Vision alone.
 
        *Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1919 (1905). TAYLOR, Bartonus A. GPS: 36.904000, -104.430471. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 21 Nov 2020.
 
-   Photographer name and WikiTree ID are in **Settings**.
+   Photographer name and WikiTree ID are in **Settings**. Without them the citation still carries the date the photo was taken
+   ("Photographed: taken 21 Nov 2020."); with them it reads "Photographed by: [[Robinson-27225|Azure Robinson]]: taken 21 Nov 2020."
 
 **Export CSV** writes the whole worklist. Data lives in `data/worklist.json`; photos are never modified.
 
@@ -83,7 +88,7 @@ The generated table was checked against the map app's own table reader.
 page). Upload its contents to any static host; all paths are relative, so any folder works (for example
 `apps/robinson27225/headstone-photo-tool/`). To try it first:
 
-    npm run serve:web        # http://localhost:8790/?api=/wtapi
+    npm run serve:web        # prints the test address, ?api=/wtapi plus proxies for the map lookups
 
 WikiTree's API only answers pages on wikitree.com, so on localhost the lookups go through a small proxy that `serve:web`
 provides (the `?api=/wtapi` part). On the apps server nothing extra is needed.
