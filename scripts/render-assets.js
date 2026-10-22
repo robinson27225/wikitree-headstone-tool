@@ -8,16 +8,21 @@ const puppeteer = require('puppeteer-core');
 
 const root = path.join(__dirname, '..');
 const chrome = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const jobs = [['logo.svg', 'logo-1080.png', 1080], ['icon.svg', 'icon-512.png', 512], ['icon.svg', 'icon-96.png', 96], ['icon.svg', 'icon-32.png', 32]];
+// [source, output, size, background]: no background means transparent. The white ones are for blogs and social media,
+// which often show images on dark or coloured backgrounds where the dark-green wordmark would disappear.
+const jobs = [
+  ['logo.svg', 'logo-1080.png', 1080], ['logo.svg', 'logo-500.png', 500], ['logo.svg', 'logo-500-white.png', 500, '#ffffff'],
+  ['icon.svg', 'icon-512.png', 512], ['icon.svg', 'icon-96.png', 96], ['icon.svg', 'icon-32.png', 32],
+];
 
 (async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: true });
   const page = await browser.newPage();
-  for (const [src, out, size] of jobs) {
+  for (const [src, out, size, background] of jobs) {
     const svg = fs.readFileSync(path.join(root, 'assets', src), 'utf8');
     await page.setViewport({ width: size, height: size, deviceScaleFactor: 1 });
-    await page.setContent(`<style>html,body{margin:0;background:transparent}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`);
-    await page.screenshot({ path: path.join(root, 'assets', out), omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
+    await page.setContent(`<style>html,body{margin:0;background:${background || 'transparent'}}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`);
+    await page.screenshot({ path: path.join(root, 'assets', out), omitBackground: !background, clip: { x: 0, y: 0, width: size, height: size } });
     console.log('assets/' + out);
   }
   await browser.close();

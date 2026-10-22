@@ -142,20 +142,38 @@ The shared code is in `lib/` (loads in Node and in the browser), the page in `pu
   query and matching falls back to name plus death date.
 - Find a Grave and FamilySearch are entered by hand (paste an ID or a URL; the ID is extracted). Search links are provided.
 
-## WikiTree Sourcer support ("Save Person Data")
+## Creating the WikiTree profile with Sourcer
 
-`sourcer-support/headstone-site.patch` adds a `headstone` site to a checkout of
-WikiTree Sourcer using its own `create_new_site` layout, and passes its unit tests:
+`sourcer-support/headstone-site.patch` adds a `headstone` site to a checkout of WikiTree Sourcer, using Sourcer's own
+`create_new_site` layout. Sourcer then reads a person page of this tool (the Mac version at `localhost:8777`, or the browser
+version in an apps-server folder named `headstone-tool`). Apply it, test it and load the extension as usual:
 
     cd ~/code/wikitree-sourcer
-    git apply /path/to/headstone-worklist/sourcer-support/headstone-site.patch
+    git apply /path/to/headstone-photo-tool/sourcer-support/headstone-site.patch
     node scripts/run_test.js headstone
 
-Then load the extension as usual. On a person page of this app (`http://localhost:8777/person/...`) Sourcer's popup
-offers **Save Person Data**, and the saved data can be used with **Set Fields from Person Data** in WikiTree's Add Person flow.
-The person page embeds the person as JSON (`<script id="headstone-person-data">`) which the Sourcer extract step reads.
-If you run the app on another port, change the match pattern in `headstone_site_data.mjs` and the manifests.
-The patch has not been tried in a live browser, only through Sourcer's test harness.
+**To add a person:**
+
+1. On the person's page in this tool, open Sourcer and choose **Build Citation**, then **Source**. (Inline and narrative also work.)
+2. On WikiTree, click **Add person** (the button on the person page opens WikiTree's Special:EditFamily) and open Sourcer.
+3. Choose **Set Fields from Citation Data**. Sourcer fills in the name, last name at birth (maiden name), birth and death dates, and
+   puts the **Monumental inscription** source line in the Sources section.
+
+What the citation becomes depends on the type chosen in step 1:
+
+| Type | Result |
+| --- | --- |
+| Source (the normal choice) | `*Monumental inscription. United States of America. [[Space:…|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: …` in Sources |
+| Narrative | a burial sentence, "David died on 12 February 1925 and was buried at Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America.", with the Monumental inscription as its reference |
+| Inline | the Monumental inscription as a reference in the biography |
+
+The death place is left blank on purpose: the cemetery is where the person is buried, not where they died.
+
+Why this way: Sourcer's **Save Person Data** is offered only for profile pages, and a headstone is a record, so Sourcer's record flow
+(Build Citation, then Set Fields from Citation Data) is the right fit. The person page embeds the person as JSON
+(`<script id="headstone-person-data">`), which the Sourcer extract step reads. The patch changes only the new site's files and
+the places Sourcer registers sites; it passes Sourcer's whole test suite. It has not been tried in a live browser, only through
+Sourcer's test harness.
 
 ## Tests
 

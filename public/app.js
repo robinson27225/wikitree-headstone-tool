@@ -181,6 +181,7 @@ async function renderPerson(id) {
         <div class="row" style="margin-bottom:6px"><span id="wtstate"></span><button class="small" id="wtcheck">Check WikiTree</button>
           <a class="btn small" target="_blank" rel="noopener" href="${links.wtSearch}">Search on WikiTree ↗</a><a class="btn small" target="_blank" rel="noopener" href="https://www.wikitree.com/wiki/Special:EditFamily">Add person ↗</a></div>
         <div id="cands"></div>
+        ${p.wikitreeId ? '' : '<p class="muted" style="font-size:12px;margin:8px 0 0">To fill in the new profile with WikiTree Sourcer: on this page choose Build Citation, then Source. On the Add person page choose Set Fields from Citation Data.</p>'}
         <div class="row" style="margin-top:8px"><a class="btn small" target="_blank" rel="noopener" href="${links.fgSearch}">Search Find a Grave ↗</a><a class="btn small" target="_blank" rel="noopener" href="${links.fsSearch}">Search FamilySearch ↗</a></div>
       </div>
       <div class="card"><h2>Location and photo</h2>

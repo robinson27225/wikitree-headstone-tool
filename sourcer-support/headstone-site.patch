@@ -1,48 +1,52 @@
 diff --git a/browser_variants/firefox/manifest.json b/browser_variants/firefox/manifest.json
-index 5820b48..e2e1d51 100644
+index 5820b48..9e2d3ee 100644
 --- a/browser_variants/firefox/manifest.json
 +++ b/browser_variants/firefox/manifest.json
-@@ -133,6 +133,7 @@
+@@ -133,6 +133,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
 +    "*://localhost:8777/*",
++    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/browser_variants/safari/ios/manifest.json b/browser_variants/safari/ios/manifest.json
-index bc974a0..5618e82 100644
+index bc974a0..df88f1a 100644
 --- a/browser_variants/safari/ios/manifest.json
 +++ b/browser_variants/safari/ios/manifest.json
-@@ -134,6 +134,7 @@
+@@ -134,6 +134,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
 +    "*://localhost:8777/*",
++    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/browser_variants/safari/macos/manifest.json b/browser_variants/safari/macos/manifest.json
-index e811c27..7d99179 100644
+index e811c27..20e42ac 100644
 --- a/browser_variants/safari/macos/manifest.json
 +++ b/browser_variants/safari/macos/manifest.json
-@@ -131,6 +131,7 @@
+@@ -131,6 +131,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
 +    "*://localhost:8777/*",
++    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/extension/manifest.json b/extension/manifest.json
-index 36fd49d..0c0251a 100644
+index 36fd49d..55f448e 100644
 --- a/extension/manifest.json
 +++ b/extension/manifest.json
-@@ -131,6 +131,7 @@
+@@ -131,6 +131,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
 +    "*://localhost:8777/*",
++    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
@@ -514,10 +518,10 @@ index 0000000..7f83c79
 +registerSearchMenuItemFromConfig(searchMenuConfig);
 diff --git a/extension/site/headstone/core/headstone_build_citation.mjs b/extension/site/headstone/core/headstone_build_citation.mjs
 new file mode 100644
-index 0000000..a580ca1
+index 0000000..142db36
 --- /dev/null
 +++ b/extension/site/headstone/core/headstone_build_citation.mjs
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,67 @@
 +/*
 +MIT License
 +
@@ -565,10 +569,21 @@ index 0000000..a580ca1
 +function buildCitation(input) {
 +  let citationObject = simpleBuildCitationWrapper(input, buildCoreCitation);
 +
-+  // The worklist builds the full "*Monumental inscription. ..." source line (cemetery Space page,
-+  // GPS, photographer) from its own settings, so use that exactly as the user has it.
-+  if (input.extractedData.citation) {
-+    citationObject.citation = input.extractedData.citation;
++  // The Headstone Worklist builds the full "*Monumental inscription. ..." source line (cemetery Space page, GPS,
++  // photographer) from its own settings. That line is the source for this person, so use it as it is, wrapped the
++  // way Sourcer wraps the type that was asked for: a line in the Sources section (the normal home for this
++  // citation), or a reference in the biography, after the burial sentence for the narrative type.
++  // (For other targets such as plain text, Sourcer's own wording is kept: wiki links make no sense there.)
++  const text = input.extractedData.citation;
++  if (text && input.options.citation_general_target == "wikitree") {
++    if (citationObject.type == "source") {
++      citationObject.citation = text;
++    } else {
++      const body = text.replace(/^\*\s*/, "");
++      const refStart = citationObject.citation.indexOf("<ref>");
++      const before = refStart > 0 ? citationObject.citation.substring(0, refStart) : ""; // the narrative sentence, if any
++      citationObject.citation = before + "<ref>" + body + "</ref>";
++    }
 +  }
 +  return citationObject;
 +}
@@ -635,10 +650,10 @@ index 0000000..6f2e474
 +export { buildSearchData };
 diff --git a/extension/site/headstone/core/headstone_ed_reader.mjs b/extension/site/headstone/core/headstone_ed_reader.mjs
 new file mode 100644
-index 0000000..b839cb2
+index 0000000..190d112
 --- /dev/null
 +++ b/extension/site/headstone/core/headstone_ed_reader.mjs
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,147 @@
 +/*
 +MIT License
 +
@@ -686,7 +701,8 @@ index 0000000..b839cb2
 +  constructor(ed) {
 +    super(ed);
 +
-+    this.recordType = RT.Memorial;
++    // A headstone marks a burial. Sourcer's burial sentence then reads "X died on <date> and was buried at <cemetery>".
++    this.recordType = RT.Burial;
 +  }
 +
 +  ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -706,9 +722,9 @@ index 0000000..b839cb2
 +    return "";
 +  }
 +
-+  // A headstone commemorates a death, so the event is the death.
++  // The stone gives the date of death, not of the burial, so there is no event date (that is the burial date)
 +  getEventDateObj() {
-+    return this.getDeathDateObj();
++    return undefined;
 +  }
 +
 +  // The cemetery is the place the stone tells us about.
@@ -895,7 +911,7 @@ index 0000000..170e31d
 +registerOptionsGroup(citationOptionsGroup);
 diff --git a/extension/site/headstone/core/headstone_site_data.mjs b/extension/site/headstone/core/headstone_site_data.mjs
 new file mode 100644
-index 0000000..c8d1596
+index 0000000..058fa69
 --- /dev/null
 +++ b/extension/site/headstone/core/headstone_site_data.mjs
 @@ -0,0 +1,41 @@
@@ -927,7 +943,7 @@ index 0000000..c8d1596
 +
 +const siteData = {
 +  siteName: "headstone",
-+  matches: ["*://localhost:8777/*"],
++  matches: ["*://localhost:8777/*", "*://apps.wikitree.com/apps/*/headstone-tool/*"],
 +  repositoryName: "Headstone Worklist",
 +  usPhoneNumber: "",
 +  email: "",
@@ -963,17 +979,17 @@ index f5b7d73..428f50c 100644
  function testSuiteEnabled(parameters, testSuiteName) {
 diff --git a/unit_tests/headstone/citations/ref/david_lee_bears.json b/unit_tests/headstone/citations/ref/david_lee_bears.json
 new file mode 100755
-index 0000000..376f796
+index 0000000..323e3a1
 --- /dev/null
 +++ b/unit_tests/headstone/citations/ref/david_lee_bears.json
 @@ -0,0 +1,14 @@
 +{
 +  "std_inline": {
-+    "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.",
++    "citation": "<ref>Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.</ref>",
 +    "type": "inline"
 +  },
 +  "std_narrative": {
-+    "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.",
++    "citation": "David died on 12 February 1925 and was buried at Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America.<ref>Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.</ref>",
 +    "type": "narrative"
 +  },
 +  "std_source": {
@@ -984,17 +1000,17 @@ index 0000000..376f796
 \ No newline at end of file
 diff --git a/unit_tests/headstone/citations/ref/mary_a_moclain.json b/unit_tests/headstone/citations/ref/mary_a_moclain.json
 new file mode 100755
-index 0000000..9e3ab58
+index 0000000..22357fa
 --- /dev/null
 +++ b/unit_tests/headstone/citations/ref/mary_a_moclain.json
 @@ -0,0 +1,14 @@
 +{
 +  "std_inline": {
-+    "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.",
++    "citation": "<ref>Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.</ref>",
 +    "type": "inline"
 +  },
 +  "std_narrative": {
-+    "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.",
++    "citation": "Mary died in 1847 and was buried at Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America.<ref>Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.</ref>",
 +    "type": "narrative"
 +  },
 +  "std_source": {
@@ -1087,20 +1103,17 @@ index 0000000..3381e9c
 \ No newline at end of file
 diff --git a/unit_tests/headstone/generalized_data/ref/david_lee_bears.json b/unit_tests/headstone/generalized_data/ref/david_lee_bears.json
 new file mode 100755
-index 0000000..99f72a6
+index 0000000..798087c
 --- /dev/null
 +++ b/unit_tests/headstone/generalized_data/ref/david_lee_bears.json
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,20 @@
 +{
 +  "sourceOfData": "headstone",
 +  "sourceType": "record",
-+  "recordType": "Memorial",
++  "recordType": "Burial",
 +  "name": {
 +    "lastName": "Bears",
 +    "forenames": "David Lee"
-+  },
-+  "eventDate": {
-+    "dateString": "12 Feb 1925"
 +  },
 +  "eventPlace": {
 +    "placeString": "Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America"
@@ -1117,20 +1130,17 @@ index 0000000..99f72a6
 \ No newline at end of file
 diff --git a/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json b/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json
 new file mode 100755
-index 0000000..734bbee
+index 0000000..30433ba
 --- /dev/null
 +++ b/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,17 @@
 +{
 +  "sourceOfData": "headstone",
 +  "sourceType": "record",
-+  "recordType": "Memorial",
++  "recordType": "Burial",
 +  "name": {
 +    "lastName": "Moclain",
 +    "forenames": "Mary A"
-+  },
-+  "eventDate": {
-+    "dateString": "1847"
 +  },
 +  "eventPlace": {
 +    "placeString": "Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America"
