@@ -1,79 +1,195 @@
 diff --git a/browser_variants/firefox/manifest.json b/browser_variants/firefox/manifest.json
-index 5820b48..9e2d3ee 100644
+index 3951a8a..bfd3693 100644
 --- a/browser_variants/firefox/manifest.json
 +++ b/browser_variants/firefox/manifest.json
-@@ -133,6 +133,8 @@
+@@ -130,6 +130,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost:8777/*",
++    "*://localhost/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/browser_variants/safari/ios/manifest.json b/browser_variants/safari/ios/manifest.json
-index bc974a0..df88f1a 100644
+index 92a2877..13033a9 100644
 --- a/browser_variants/safari/ios/manifest.json
 +++ b/browser_variants/safari/ios/manifest.json
-@@ -134,6 +134,8 @@
+@@ -131,6 +131,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost:8777/*",
++    "*://localhost/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/browser_variants/safari/macos/manifest.json b/browser_variants/safari/macos/manifest.json
-index e811c27..20e42ac 100644
+index 1c7648d..87b1d5a 100644
 --- a/browser_variants/safari/macos/manifest.json
 +++ b/browser_variants/safari/macos/manifest.json
-@@ -131,6 +131,8 @@
+@@ -128,6 +128,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost:8777/*",
++    "*://localhost/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
+diff --git a/extension/base/browser/background/background_common.mjs b/extension/base/browser/background/background_common.mjs
+index 64f55cb..bd447c0 100644
+--- a/extension/base/browser/background/background_common.mjs
++++ b/extension/base/browser/background/background_common.mjs
+@@ -50,7 +50,9 @@ function doesUrlMatchChromePattern(pattern, url) {
+     .replace(/\*/g, ".*"); // Convert * to .*
+ 
+   const regex = new RegExp(`^${regexString}$`);
+-  return regex.test(url);
++  // Chrome match patterns cannot contain a port and match any port, so ignore the port in the URL too
++  // (otherwise a site on, say, localhost:8777 would never match its pattern)
++  return regex.test(url.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/:?#]+):\d+/i, "$1"));
+ }
+ 
+ async function handleGetPlatformInfoMessage(request, sendResponse) {
+diff --git a/extension/base/browser/background/background_content_scripts.mjs b/extension/base/browser/background/background_content_scripts.mjs
+index 0902e67..2c4616f 100644
+--- a/extension/base/browser/background/background_content_scripts.mjs
++++ b/extension/base/browser/background/background_content_scripts.mjs
+@@ -138,6 +138,16 @@ async function injectContentScriptsIntoExistingTabFrame(tab, contentScriptJs, fr
+   }
+ }
+ 
++// A site can exclude pages that another site claims for itself (excludeMatches). The scripts that are registered
++// honour that, so the scripts that are injected by hand into tabs that are already open must too.
++function isExcludedByContentScript(contentScript, url) {
++  return !!(
++    contentScript.excludeMatches &&
++    url &&
++    contentScript.excludeMatches.some((pattern) => doesUrlMatchChromePattern(pattern, url))
++  );
++}
++
+ async function injectContentScriptsIntoTabsThatMatch(grantedOrigins) {
+   logDebug("grantedOrigins ", grantedOrigins);
+ 
+@@ -161,6 +171,9 @@ async function injectContentScriptsIntoTabsThatMatch(grantedOrigins) {
+       for (const tab of tabs) {
+         // Find the content scripts for that site
+         for (let contentScript of contentScripts) {
++          if (isExcludedByContentScript(contentScript, tab.url)) {
++            continue;
++          }
+           if (!injectedScripts.has(tab.id)) {
+             injectedScripts.set(tab.id, []);
+           }
+@@ -246,6 +259,9 @@ async function injectContentScriptsIntoExistingTabs(contentScripts) {
+ 
+           // Inject the scripts into every matching tab
+           for (const tab of tabs) {
++            if (isExcludedByContentScript(contentScript, tab.url)) {
++              continue;
++            }
+             if (contentScript.allFrames) {
+               // using "allFrames" as an indicator to target only matching frames
+               const frameResults = await chrome.scripting.executeScript({
+@@ -346,6 +362,10 @@ async function registerContentScripts() {
+         }
+ 
+         let script = { id: id, matches: matches, js: js, runAt: runAt };
++        if (siteData.excludeMatches) {
++          // Pages that another site claims for itself (for example a site that runs on apps.wikitree.com)
++          script.excludeMatches = siteData.excludeMatches;
++        }
+         scripts.push(script);
+ 
+         if (siteData.additionalContentScripts) {
+diff --git a/extension/base/browser/common/permissions.mjs b/extension/base/browser/common/permissions.mjs
+index 4260a2d..bc02c37 100644
+--- a/extension/base/browser/common/permissions.mjs
++++ b/extension/base/browser/common/permissions.mjs
+@@ -75,7 +75,8 @@ function doesUrlMatchChromePattern(pattern, url) {
+ 
+   const regex = new RegExp(`^${regexString}$`);
+ 
+-  return regex.test(url);
++  // Chrome match patterns cannot contain a port and match any port, so ignore the port in the URL too
++  return regex.test(url.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/:?#]+):\d+/i, "$1"));
+ }
+ 
+ async function getMatchingOptionalPattern(url) {
+diff --git a/extension/base/browser/popup/popup.mjs b/extension/base/browser/popup/popup.mjs
+index ea62ddd..6e38392 100644
+--- a/extension/base/browser/popup/popup.mjs
++++ b/extension/base/browser/popup/popup.mjs
+@@ -456,17 +456,29 @@ async function determineSiteNameForTab(activeTab) {
+ 
+     logDebug("determineSiteNameForTab: contentScripts is ", contentScripts);
+ 
++    // Several sites can match one page (the Headstone Worklist runs on apps.wikitree.com, which the wikitree site also
++    // matches). The last matching site is the one used, as in background_action.mjs, and a site's excludeMatches are honoured.
++    let matchedScript = undefined;
++    let matchedPattern = undefined;
+     for (let contentScript of contentScripts) {
++      if (contentScript.excludeMatches && contentScript.excludeMatches.some((m) => doesUrlMatchChromePattern(m, url))) {
++        continue;
++      }
+       for (let match of contentScript.matches) {
+         let doesTabMatch = doesUrlMatchChromePattern(match, url);
+ 
+         if (doesTabMatch) {
+-          return await checkPermissionsForMatchedContentScript(activeTab, contentScript, match);
++          matchedScript = contentScript;
++          matchedPattern = match;
++          break;
+         }
+ 
+         logDebug("determineSiteNameForTab: no match is ", match, url);
+       }
+     }
++    if (matchedScript) {
++      return await checkPermissionsForMatchedContentScript(activeTab, matchedScript, matchedPattern);
++    }
+   } catch (e) {
+     console.error("WikiTree Sourcer: error in determineSiteNameForTab. URL is: ", url, e);
+ 
 diff --git a/extension/manifest.json b/extension/manifest.json
-index 36fd49d..55f448e 100644
+index 770e1bf..9dfe3db 100644
 --- a/extension/manifest.json
 +++ b/extension/manifest.json
-@@ -131,6 +131,8 @@
+@@ -128,6 +128,8 @@
      "*://geneteka.genealodzy.pl/*",
      "*://graves.eggsa.org/*",
      "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost:8777/*",
++    "*://localhost/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
      "*://paperspast.natlib.govt.nz/*",
      "*://probatesearch.service.gov.uk/*",
      "*://recherche.archives.finistere.fr/ark:/*",
 diff --git a/extension/site/all/core/register_site_data.mjs b/extension/site/all/core/register_site_data.mjs
-index 9549b22..05c987b 100644
+index f30a659..324480a 100644
 --- a/extension/site/all/core/register_site_data.mjs
 +++ b/extension/site/all/core/register_site_data.mjs
-@@ -66,6 +66,7 @@ import "../../geneteka/core/geneteka_site_data.mjs";
- import "../../gensau/core/gensau_site_data.mjs";
- import "../../gro/core/gro_site_data.mjs";
- import "../../hathi/core/hathi_site_data.mjs";
+@@ -101,3 +101,7 @@ import "../../wiewaswie/core/wiewaswie_site_data.mjs";
+ import "../../wikipedia/core/wikipedia_site_data.mjs";
+ import "../../wikitree/core/wikitree_site_data.mjs";
+ import "../../yadvashem/core/yadvashem_site_data.mjs";
++
++// Registered last on purpose. The Headstone Worklist can run on apps.wikitree.com, which the wikitree site also matches,
++// and when several sites match a page the last one registered is used for the popup (see background_action.mjs).
 +import "../../headstone/core/headstone_site_data.mjs";
- import "../../imdb/core/imdb_site_data.mjs";
- import "../../irishg/core/irishg_site_data.mjs";
- import "../../itcadgg/core/itcadgg_site_data.mjs";
 diff --git a/extension/site/all/core/register_site_options.mjs b/extension/site/all/core/register_site_options.mjs
-index 16135a1..3d63e6e 100644
+index 73b542c..46e8a57 100644
 --- a/extension/site/all/core/register_site_options.mjs
 +++ b/extension/site/all/core/register_site_options.mjs
-@@ -63,6 +63,7 @@ import "../../geneteka/core/geneteka_options.mjs";
+@@ -62,6 +62,7 @@ import "../../geneteka/core/geneteka_options.mjs";
  import "../../gensau/core/gensau_options.mjs";
  import "../../gro/core/gro_options.mjs";
  import "../../hathi/core/hathi_options.mjs";
 +import "../../headstone/core/headstone_options.mjs";
- import "../../imdb/core/imdb_options.mjs";
  import "../../irishg/core/irishg_options.mjs";
  import "../../itcadgg/core/itcadgg_options.mjs";
+ import "../../jstor/core/jstor_options.mjs";
 diff --git a/extension/site/headstone/browser/headstone_content.js b/extension/site/headstone/browser/headstone_content.js
 new file mode 100644
 index 0000000..84df4de
@@ -911,7 +1027,7 @@ index 0000000..170e31d
 +registerOptionsGroup(citationOptionsGroup);
 diff --git a/extension/site/headstone/core/headstone_site_data.mjs b/extension/site/headstone/core/headstone_site_data.mjs
 new file mode 100644
-index 0000000..058fa69
+index 0000000..8ea5a5d
 --- /dev/null
 +++ b/extension/site/headstone/core/headstone_site_data.mjs
 @@ -0,0 +1,41 @@
@@ -943,7 +1059,7 @@ index 0000000..058fa69
 +
 +const siteData = {
 +  siteName: "headstone",
-+  matches: ["*://localhost:8777/*", "*://apps.wikitree.com/apps/*/headstone-tool/*"],
++  matches: ["*://localhost/*", "*://apps.wikitree.com/apps/*/headstone-tool/*"],
 +  repositoryName: "Headstone Worklist",
 +  usPhoneNumber: "",
 +  email: "",
@@ -956,27 +1072,31 @@ index 0000000..058fa69
 +}
 +
 +register();
+diff --git a/extension/site/wikitree/core/wikitree_site_data.mjs b/extension/site/wikitree/core/wikitree_site_data.mjs
+index e3bc7b2..0a3a9ee 100644
+--- a/extension/site/wikitree/core/wikitree_site_data.mjs
++++ b/extension/site/wikitree/core/wikitree_site_data.mjs
+@@ -27,6 +27,8 @@ import { registerSite } from "../../../base/core/site_registry.mjs";
+ const siteData = {
+   siteName: "wikitree",
+   matches: ["*://*.wikitree.com/*"],
++  // The Headstone Worklist runs on apps.wikitree.com and has its own site; the WikiTree site must not also read those pages
++  excludeMatches: ["*://apps.wikitree.com/apps/*/headstone-tool/*"],
+   repositoryName: "WikiTree",
+   usPhoneNumber: "",
+   email: "",
 diff --git a/scripts/run_test.js b/scripts/run_test.js
-index f5b7d73..428f50c 100644
+index b9e78f2..b0d1300 100644
 --- a/scripts/run_test.js
 +++ b/scripts/run_test.js
-@@ -59,6 +59,7 @@ const siteNames = [
+@@ -58,6 +58,7 @@ const siteNames = [
    "gensau",
    "gro",
    "hathi",
 +  "headstone",
-   "imdb",
    "irishg",
    "itcadgg",
-@@ -97,7 +98,7 @@ const siteNames = [
-   "wikipedia",
-   "wikitree",
-   "yadvashem",
--  "youtube",
-+  "youtube"
- ];
- 
- function testSuiteEnabled(parameters, testSuiteName) {
+   "jstor",
 diff --git a/unit_tests/headstone/citations/ref/david_lee_bears.json b/unit_tests/headstone/citations/ref/david_lee_bears.json
 new file mode 100755
 index 0000000..323e3a1
