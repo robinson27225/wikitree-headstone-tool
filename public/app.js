@@ -165,7 +165,7 @@ async function renderPerson(id) {
           <div><label for="f-suffix">Suffix</label><input id="f-suffix" data-k="suffix" value="${esc(p.suffix)}" placeholder="Jr, Sr, III"></div>
           <div><label for="f-birth">Date of birth</label><input id="f-birth" data-k="birth" data-date value="${esc(dispDate(p.birth))}" placeholder="1905 or 5 Jan 1905"></div>
           <div><label for="f-death">Date of death</label><input id="f-death" data-k="death" data-date value="${esc(dispDate(p.death))}" placeholder="1919 or 12 Feb 1919"></div>
-          <div class="full"><label for="f-wt">WikiTree ID</label><div class="idrow"><input id="f-wt" data-k="wikitreeId" value="${esc(p.wikitreeId)}" placeholder="Taylor-133877">${p.wikitreeId ? `<a id="wtlink" target="_blank" rel="noopener" href="${wtUrl(p.wikitreeId)}">Open ↗</a>` : ''}</div></div>
+          <div class="full"><label for="f-wt">WikiTree ID</label><div class="idrow"><input id="f-wt" data-k="wikitreeId" value="${esc(p.wikitreeId)}" placeholder="Surname-123">${p.wikitreeId ? `<a id="wtlink" target="_blank" rel="noopener" href="${wtUrl(p.wikitreeId)}">Open ↗</a>` : ''}</div></div>
           <div><label for="f-fg">Find a Grave memorial</label><div class="idrow"><input id="f-fg" data-k="findagrave" value="${esc(p.findagrave)}" placeholder="ID or URL">${p.findagrave ? `<a target="_blank" rel="noopener" href="https://www.findagrave.com/memorial/${esc(p.findagrave)}">Open ↗</a>` : ''}</div></div>
           <div><label for="f-fs">FamilySearch ID</label><div class="idrow"><input id="f-fs" data-k="familysearch" value="${esc(p.familysearch)}" placeholder="ID or URL">${p.familysearch ? `<a target="_blank" rel="noopener" href="https://ancestors.familysearch.org/en/${esc(p.familysearch)}">Open ↗</a>` : ''}</div></div>
           <div class="full"><label for="f-photo">Headstone photo on WikiTree</label>
@@ -264,7 +264,7 @@ async function renderPerson(id) {
 function openDialog(html) { const d = $('#dlg'); d.innerHTML = html; d.showModal(); return d; }
 function cemFields(c = {}) {
   const f = (k, l, ph = '', full = false) => `<div class="${full ? 'full' : ''}"><label for="c-${k}">${l}</label><input id="c-${k}" data-c="${k}" value="${esc(c[k] || '')}" placeholder="${esc(ph)}"></div>`;
-  return `<div class="grid2">${f('name', 'Cemetery name', 'Fairmont Cemetery', true)}${f('space', 'WikiTree Space page', 'Fairmont_Cemetery_Raton_NM_USA', true)}${f('category', 'WikiTree category (for the plot map)', 'Category:Fairmont_Cemetery,_Raton,_New_Mexico', true)}${f('tablePage', 'Plot map table page title', 'Fairmont Cemetery Raton NM USA Plot Map Table', true)}${f('city', 'City', 'Raton')}${f('county', 'County', 'Colfax')}${f('state', 'State / province', 'New Mexico')}${f('country', 'Country', 'United States of America')}</div>`;
+  return `<div class="grid2">${f('name', 'Cemetery name', 'Found from the photos’ GPS if left blank', true)}${f('space', 'WikiTree Space page', 'Found automatically if WikiTree has one', true)}${f('category', 'WikiTree category (for the plot map)', 'Looked up on WikiTree', true)}${f('tablePage', 'Plot map table page title', 'Suggested for you', true)}${f('city', 'City')}${f('county', 'County')}${f('state', 'State / province')}${f('country', 'Country')}</div>`;
 }
 const readCem = (root) => Object.fromEntries([...root.querySelectorAll('[data-c]')].map((e) => [e.dataset.c, e.value.trim()]));
 

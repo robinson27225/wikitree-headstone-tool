@@ -1,4 +1,6 @@
-# Headstone Photo Tool (Headstone Worklist)
+<p align="center"><img src="assets/logo-1080.png" alt="Headstone Photo Tool logo" width="180"></p>
+
+# Headstone Photo Tool
 
 Reads headstone photos (names, dates, GPS) and builds a worklist for creating WikiTree profiles: checks WikiTree for
 each person, builds the Monumental inscription source citation, and prepares an optional Cemetery Plot Map table.
@@ -11,6 +13,30 @@ Two versions share the same code for everything except reading the photos and st
 | Photos come from | a Photos album or a folder | files you choose (JPEG, PNG, HEIC) |
 | Reads text with | Apple Vision, plus PaddleOCR if installed | PaddleOCR (in WebAssembly) |
 | Your data | `data/` folder | this browser's storage (download a backup from Settings) |
+
+## Screenshots
+
+These are from the browser version, using seven real photos from Fairmont Cemetery in Raton, New Mexico.
+
+**Import.** Choose photos and leave the cemetery blank: it is found from the photos' GPS.
+
+![The import dialog](docs/screenshots/import.png)
+
+**The worklist.** Every person found, with a WikiTree match where there is one. ⚠ marks names or dates to check against the photo.
+
+![The worklist](docs/screenshots/worklist.png)
+
+**A person.** The photo, the fields to correct, WikiTree matches, GPS, and the Monumental inscription source ready to copy.
+
+![A person page](docs/screenshots/person.png)
+
+**How a stone was read.** Each photo is read several times and the readings vote letter by letter. Lines they disagreed on are shown, so you know what to check.
+
+![How a stone was read](docs/screenshots/readings.png)
+
+**Cemetery plot map.** The table and categories for the Cemetery Plot Map app, with checks before you publish.
+
+![The plot map dialog](docs/screenshots/plot-map.png)
 
 ## Install and run (Mac version)
 
@@ -154,6 +180,14 @@ The patch has not been tried in a live browser, only through Sourcer's test harn
 
 Please include, for a problem reading a stone, the photo (or what the stone says), what the tool read, and what it should have
 read. The text read from each photo is shown on its person page.
+
+## Logo and screenshots
+
+`assets/` holds the logo (`logo.svg`, `icon.svg` and PNGs, drawn by `npm run assets`; the wordmark uses Source Sans 3 Bold, SIL Open
+Font License, turned into outlines). `docs/screenshots/` is made by `npm run screenshots` from the real browser version: build it
+(`npm run build:web`), start `node scripts/serve-web.js`, then `PHOTOS="path/to/photos" npm run screenshots`. Needs Chrome and an
+internet connection, and takes a few minutes because the photos are really imported. For the WikiTree apps page, `assets/logo-1080.png`
+is the 1080 px square logo and `assets/icon-96.png` the 96 px icon.
 
 ## License
 

@@ -19,6 +19,8 @@ const copy = (from, to) => fs.copyFileSync(from, path.join(out, to));
 fs.writeFileSync(path.join(out, 'index.html'), fs.readFileSync(path.join(root, 'web-src/index.html'), 'utf8').replace(/__VERSION__/g, version));
 copy(path.join(root, 'public/style.css'), 'style.css');
 copy(path.join(root, 'public/app.js'), 'app.js');
+copy(path.join(root, 'public/icon.svg'), 'icon.svg');
+copy(path.join(root, 'public/favicon-32.png'), 'favicon-32.png');
 copy(path.join(root, 'web-src/web.js'), 'web.js');
 for (const f of ['md5', 'parse', 'ocr_merge', 'wikitree', 'photoref', 'plotmap', 'categories', 'places', 'citation', 'core', 'routes']) copy(path.join(root, `lib/${f}.js`), `lib/${f}.js`);
 
