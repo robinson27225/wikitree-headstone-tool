@@ -179,7 +179,7 @@ async function renderPerson(id) {
       </div>
       <div class="card"><h2>WikiTree match</h2>
         <div class="row" style="margin-bottom:6px"><span id="wtstate"></span><button class="small" id="wtcheck">Check WikiTree</button>
-          <a class="btn small" target="_blank" rel="noopener" href="${links.wtSearch}">Search on WikiTree ↗</a><a class="btn small" target="_blank" rel="noopener" href="https://www.wikitree.com/wiki/Special:AddPerson">Add person ↗</a></div>
+          <a class="btn small" target="_blank" rel="noopener" href="${links.wtSearch}">Search on WikiTree ↗</a><a class="btn small" target="_blank" rel="noopener" href="https://www.wikitree.com/wiki/Special:EditFamily">Add person ↗</a></div>
         <div id="cands"></div>
         <div class="row" style="margin-top:8px"><a class="btn small" target="_blank" rel="noopener" href="${links.fgSearch}">Search Find a Grave ↗</a><a class="btn small" target="_blank" rel="noopener" href="${links.fsSearch}">Search FamilySearch ↗</a></div>
       </div>
