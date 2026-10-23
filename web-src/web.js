@@ -178,10 +178,10 @@
         db.batches.push(batch);
         save();
         for (const f of files) { job.current = f.name; await processFile(f, batch, job, { checkWikiTree }); job.done++; }
-        if (!batch.cemetery.name) {
+        if (!batch.cemetery.name || !batch.cemetery.city || !batch.cemetery.state) { // fills only what is empty
           job.current = "Finding the cemetery from the photos' GPS…";
           const r = await HW.core.findCemeteryFromGps(ctx, batch);
-          job.log.push(r.found ? `Cemetery found from GPS: ${batch.cemetery.name}, ${batch.cemetery.city}` : r.notes[0]);
+          job.log.push(r.found || batch.cemetery.city ? `Cemetery place from GPS: ${batch.cemetery.name}, ${batch.cemetery.city}` : r.notes[0]);
         }
         job.status = 'done';
       } catch (e) { job.status = 'error'; job.error = e.message; }

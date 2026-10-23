@@ -190,15 +190,17 @@ async function renderPerson(id) {
           <div><label for="f-lon">GPS longitude</label><input id="f-lon" data-stone="lon" value="${st.lon == null ? '' : (+st.lon).toFixed(6)}"></div>
           <div class="full"><label for="f-taken">Photo taken (yyyy:mm:dd hh:mm:ss)</label><input id="f-taken" data-stone="takenAt" value="${esc(st.takenAt)}"></div>
         </div>
-        <details style="margin-top:10px" ${st.plot || st.section || st.row || st.monument || st.reference ? 'open' : ''}><summary>Plot map details <span class="muted">(optional, shared by everyone on this stone)</span></summary>
-          <div class="fields" style="margin-top:8px">
-            <div><label for="f-section">Section</label><input id="f-section" data-stone="section" value="${esc(st.section)}"></div>
-            <div><label for="f-plot">Plot</label><input id="f-plot" data-stone="plot" value="${esc(st.plot)}"></div>
-            <div><label for="f-row">Row</label><input id="f-row" data-stone="row" value="${esc(st.row)}"></div>
-            <div><label for="f-monument">Monument (heading on the stone)</label><input id="f-monument" data-stone="monument" value="${esc(st.monument)}"></div>
-            <div class="full"><label for="f-reference">Reference</label><input id="f-reference" data-stone="reference" value="${esc(st.reference)}"></div>
-          </div></details>
-        <p class="muted" style="margin:10px 0 0">${esc([cem.name, cem.city, cem.county, cem.state].filter(Boolean).join(', ') || 'No cemetery set')} · <a href="#" id="editcem">edit cemetery</a>${st.lat != null ? ` · <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${st.lat},${st.lon}">map ↗</a>` : ' · <span class="flags">no GPS in photo</span>'}</p>
+        <p class="muted" style="margin:10px 0 0">${esc([cem.name, cem.city, cem.county, cem.state].filter(Boolean).join(', ') || 'No cemetery set')} · <a href="#" id="editcem">edit cemetery</a>${cem.name && (!cem.city || !cem.state) ? '<div class="flags" style="margin-top:6px">⚠ Add the town and state (edit cemetery, then Find cemetery from photo GPS): many cemeteries share a name, and this is what the source and Sourcer name.</div>' : ''}${st.lat != null ? ` · <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${st.lat},${st.lon}">map ↗</a>` : ' · <span class="flags">no GPS in photo</span>'}</p>
+      </div>
+      <div class="card"><h2>Cemetery Map details <span class="muted" style="font-weight:400;font-size:13px">(optional)</span></h2>
+        <p class="muted" style="margin:0 0 10px;font-size:13px">For the <a target="_blank" rel="noopener" href="https://www.wikitree.com/wiki/Space:Cemetery_Map">Cemetery Map</a> app. They are text, shared by everyone on this stone, and appear in the plot map table only if you fill them in.</p>
+        <div class="fields">
+          <div><label for="f-plot">Plot</label><input id="f-plot" data-stone="plot" value="${esc(st.plot)}" placeholder="e.g. Block 2, Lot 7"></div>
+          <div><label for="f-monument">Monument</label><input id="f-monument" data-stone="monument" value="${esc(st.monument)}" placeholder="the heading on the stone"></div>
+          <div class="full"><label for="f-reference">Reference</label><input id="f-reference" data-stone="reference" value="${esc(st.reference)}" placeholder="a trace back to another database or record"></div>
+          <div><label for="f-section">Section</label><input id="f-section" data-stone="section" value="${esc(st.section)}"></div>
+          <div><label for="f-row">Row</label><input id="f-row" data-stone="row" value="${esc(st.row)}"></div>
+        </div>
       </div>
       <div class="card"><h2>Monumental inscription source</h2>
         <pre class="cite" id="cite">${esc(d.citation)}</pre>

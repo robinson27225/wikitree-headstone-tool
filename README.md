@@ -100,7 +100,7 @@ WikiTree Space page, using the same columns and cell wrappers it writes itself:
    The dialog also asks WikiTree whether the table page exists yet and which of the two categories it is missing.
 3. Per stone (shared by everyone on it): **Headstone photo on WikiTree** is a main field on the person page. Paste a photo
    link, an image page, or just the file name (`Bears-1.jpg`); it is turned into the `photo.php` address the map uses. Section,
-   Plot, Row, Monument and Reference are under "Plot map details" and become columns only when some row has a value.
+   Plot, Row, Monument and Reference are in the "Cemetery Map details" card (optional text boxes) and become columns only when some row has a value.
 4. People with a WikiTree ID are written as `[[ID]]` (the map takes their names from WikiTree). People without one are kept as
    burials with their own names and dates and show under "Needs WikiTree ID" on the map. Skipped people are left out.
 5. "Download TSV" gives the same rows for the map's **Import data**.

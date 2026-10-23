@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G2G post: Headstone Tool testers</title>
+<style>
+  :root { --ink:#1d2417; --muted:#5d6657; --line:#d9ddd3; --bg:#f6f7f4; --panel:#fff; --brand:#3f7a1c; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e8ecdf; --muted:#a2ac98; --line:#343b2b; --bg:#14170f; --panel:#1e2318; --brand:#7fbf4d; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; padding:16px; }
+  .meta { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:16px; }
+  .meta dt { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-top:8px; }
+  .meta dd { margin:2px 0 0; }
+  button { background:var(--brand); color:#fff; border:0; border-radius:6px; padding:8px 14px; font:inherit; cursor:pointer; }
+  #state { margin-left:10px; color:var(--muted); font-size:14px; }
+  #post { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:4px 20px 12px; margin-top:12px; }
+  #post img { max-width:100%; height:auto; border-radius:4px; }
+  #post a { color:var(--brand); }
+  h3 { margin:1.2em 0 .3em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <dl class="meta">
+    <dt>Title</dt>
+    <dd><b>Can you help test Headstone Tool, a WikiTree App that turns headstone photos into profiles?</b></dd>
+    <dt>Category</dt>
+    <dd>The Tree House</dd>
+    <dt>Tags</dt>
+    <dd>WT_APPS, CEMETERIES, IMAGES (add a Sourcer tag too if G2G has one)</dd>
+    <dt>WikiTree profile</dt>
+    <dd>Space:Headstone_Tool</dd>
+  </dl>
+  <p><button id="copy" type="button">Copy the post (formatted)</button><span id="state" role="status"></span></p>
+  <p style="color:var(--muted);font-size:14px;margin:0">Paste into the G2G editor in the normal (WYSIWYG) view. The body is the white box below.</p>
+
+<div id="post">
+<p>Hi WikiTreers,</p>
+
+<p>If you photograph headstones, the slow part comes after: reading each stone, finding out whether the person is already on WikiTree, and writing the source. I have built a WikiTree App for that, called <strong>Headstone Tool</strong>, and it is ready for testers.</p>
+
+<p><strong>Testers wanted, especially if you have a folder of headstone photos with GPS.</strong> I most need to know how well it reads your stones and whether it finds your cemetery.</p>
+
+<h3>What it does</h3>
+<ul>
+  <li><strong>Reads the stones.</strong> Choose your photos (JPEG, PNG or HEIC). The app reads the names and dates from each one, and a stone with two people becomes two people. Doubtful readings are marked so you know what to check.</li>
+  <li><strong>Finds the cemetery from the GPS</strong> in the photos: its name from OpenStreetMap, then the town, county and state, then its WikiTree Space page and category if WikiTree has them.</li>
+  <li><strong>Checks WikiTree for each person.</strong> A strong match fills in the WikiTree ID; weaker ones are shown for you to choose from. The people still needing a profile are on your worklist.</li>
+  <li><strong>Builds the Monumental inscription source</strong> for each person, with the cemetery's Space page, the GPS position and who took the photo and when, ready to paste.</li>
+  <li><strong>Lets you fill in the rest:</strong> given names, surname, maiden name, dates, the WikiTree ID once the profile exists, the Find a Grave and FamilySearch IDs, and the headstone photo on WikiTree.</li>
+  <li><strong>Optionally prepares a plot map</strong> for the Cemetery Map app: the table and categories to paste onto a Space page.</li>
+  <li><strong>Works with WikiTree Sourcer</strong> to fill in the new profile (Build Citation, then Set Fields from Citation Data). That support is proposed to Sourcer as <a href="https://github.com/RobPavey/wikitree-sourcer/pull/535">pull request 535</a> and is not in the released version yet.</li>
+</ul>
+
+<p><img src="https://www.wikitree.com/photo.php/3/3b/Headstone_Tool-4.png" alt="The Headstone Tool worklist: everyone found on the stones with their WikiTree status" width="636"></p>
+
+<p><img src="https://www.wikitree.com/photo.php/c/c1/Headstone_Tool.png" alt="A person's page in Headstone Tool: the headstone photo, the fields, the WikiTree match and the Monumental inscription source" width="636"></p>
+
+<h3>Try it</h3>
+<ul>
+  <li>The app: <a href="https://apps.wikitree.com/apps/robinson27225/headstone-tool/index.html">Headstone Tool</a></li>
+  <li>How it works, with screenshots: <a href="https://www.wikitree.com/wiki/Space:Headstone_Tool">Space:Headstone_Tool</a></li>
+  <li>Source code and a Mac version: <a href="https://github.com/robinson27225/wikitree-headstone-tool">wikitree-headstone-tool on GitHub</a></li>
+</ul>
+
+<h3>What I would love testers to try</h3>
+<ol>
+  <li>Click <strong>Import photos…</strong>, choose some of your original headstone photos, and leave the cemetery name blank. Check that it finds the right cemetery, and tell me if it does not.</li>
+  <li>Look at the worklist. For each stone, compare the name and dates with the photo, and tell me about the ones it got wrong.</li>
+  <li>Open a person and look at <strong>Text read from the photo</strong>, which shows where the readings disagreed.</li>
+  <li>Check the WikiTree match for people you know are on WikiTree, and for ones who are not.</li>
+  <li>Copy the Monumental inscription source for someone and see whether it is in the form you use.</li>
+</ol>
+
+<h3>Good to know</h3>
+<ul>
+  <li><strong>Your photos never leave your computer.</strong> They are read inside your browser. Only the names and dates it looks up go to WikiTree, and the GPS position of an import goes to OpenStreetMap to find the cemetery.</li>
+  <li>Use the <strong>original</strong> photos. Photos sent through messaging apps usually have the GPS removed.</li>
+  <li>Your worklist is kept in your browser only. If you clear the browser's site data it is erased, so use <strong>Download backup</strong> in Settings now and then.</li>
+  <li>Readings are not perfect: a single letter in a name can be wrong. Please treat what it reads as a draft.</li>
+  <li>It is a beta. I have used it in Chrome on a desktop computer, so it has not been tested on phones or other browsers yet. The first time, it loads about 16 MB of text-reading files.</li>
+</ul>
+
+<h3>Feedback</h3>
+<p>When you report something, please include the version number shown at the bottom of the page. Please answer here, comment on the <a href="https://www.wikitree.com/wiki/Space:Headstone_Tool">Space page</a>, or send me a private message. I would especially like to hear which stones it misread, whether it found your cemetery, and what was confusing.</p>
+
+<p>Thank you to OpenStreetMap contributors, to the PaddleOCR project, to Rob Pavey and everyone who works on WikiTree Sourcer, and to everyone who photographs headstones!</p>
+
+<p>Azure</p>
+</div>
+</div>
+<script>
+  const post = document.getElementById('post'), state = document.getElementById('state');
+  document.getElementById('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([post.innerHTML], { type: 'text/html' }),
+        'text/plain': new Blob([post.innerText], { type: 'text/plain' }),
+      })]);
+      state.textContent = 'Copied. Paste into the G2G editor.';
+    } catch {
+      const r = document.createRange(); r.selectNodeContents(post);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      state.textContent = 'Selected. Press Ctrl/⌘+C to copy, then paste into the G2G editor.';
+    }
+  });
+</script>
+</body>
+</html>

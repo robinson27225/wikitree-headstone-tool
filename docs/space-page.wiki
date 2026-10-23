@@ -1,0 +1,139 @@
+[[Category:WikiTree Tools and Apps]]
+[[Category:WikiTree Apps Documentation]]
+[[Category:Robinson-27225]]
+'''Headstone Tool''' is a [https://apps.wikitree.com/apps/ WikiTree App] that turns photos of headstones into a worklist for creating WikiTree profiles. Choose the photos, and the app reads the names and dates from each stone, finds the cemetery from the photo's GPS, checks whether each person is already on WikiTree, and builds the Monumental inscription source for them. Then you create or source the profiles.
+
+'''Open the app:''' [https://apps.wikitree.com/apps/robinson27225/headstone-tool/index.html Headstone Tool]
+
+'''Source code and the Mac version:''' [https://github.com/robinson27225/wikitree-headstone-tool wikitree-headstone-tool on GitHub]
+
+'''Current version:''' 0.1.0 (22 October 2026). The version is shown at the bottom of the page. See [[#Version history|Version history]] below.
+
+''This is a beta. I am looking for testers, especially people who photograph headstones or who create profiles from cemetery photos. See [[#Feedback|Feedback]] below. The G2G post is [https://www.wikitree.com/g2g/2099318 here].''
+
+== What it does ==
+* '''Reads headstones.''' Each photo is read for names and dates. A stone with two people (side by side, or under a family name) becomes two people on the worklist. Doubtful lines are marked so you know what to check against the photo. See [[#How a stone is read|How a stone is read]].
+* '''Reads the photo's GPS and date.''' The position and the date the photo was taken come from the photo itself.
+* '''Finds the cemetery from the GPS.''' Leave the cemetery blank and the app looks up the cemetery's name from [https://www.openstreetmap.org/copyright OpenStreetMap], then the town, county and state, then the cemetery's WikiTree Space page and category if WikiTree has them. Or type the cemetery yourself.
+* '''Checks WikiTree for each person.''' The app searches WikiTree by name and dates. A strong match fills in the WikiTree ID; weaker ones are shown to you to choose from. People who are not on WikiTree yet are the ones that need a profile.
+* '''Gives you a worklist.''' One line for each person: name, dates, WikiTree status, Find a Grave and FamilySearch IDs, and whether the photo is on WikiTree yet. Filter it, search it, and export it as a CSV file.
+* '''Lets you enter or correct everything:''' given names, surname, maiden name, birth and death dates, the WikiTree ID once the profile exists, the Find a Grave memorial and the FamilySearch ID, and the headstone photo on WikiTree.
+* '''Builds the Monumental inscription source''' for each person, ready to paste, with the cemetery's Space page, the GPS coordinates and who photographed it and when.
+* '''Prepares an optional plot map.''' The same data can be turned into the table and categories that the [[Space:Cemetery_Map|Cemetery Map]] app reads. See [[#Cemetery plot map|Cemetery plot map]].
+* '''Works with WikiTree Sourcer.''' Sourcer can use the person's page to fill in the new profile. See [[#Creating the profile with WikiTree Sourcer|Creating the profile with WikiTree Sourcer]].
+
+{{Image|file=Headstone_Tool-4.png|align=c|size=original|caption=The worklist: everyone found on the stones, with their WikiTree status. A warning mark means to check the name or dates against the photo.}}
+
+== How to use it ==
+=== Import photos ===
+Click '''Import photos…''' and choose your photos. You can choose many at once: JPEG, PNG or HEIC (an iPhone's usual format). Leave the cemetery name blank to find it from the GPS, or fill in the cemetery yourself. Tick '''Check WikiTree for each person after reading''' to look everyone up as the photos are read, then click '''Import'''.
+
+{{Image|file=Headstone_Tool-2.png|align=c|size=original|caption=Import: choose the photos and leave the cemetery blank to find it from their GPS.}}
+
+* '''Keep the page open''' until the import finishes. Each photo takes a few seconds, and the first time the app also loads its text reader (about 16 MB).
+* '''Use the original photos.''' Photos sent through messaging apps or social media usually have their GPS and date removed. Without GPS the app cannot find the cemetery or build the GPS part of the source.
+* '''One album is one cemetery.''' The cemetery you choose, or that is found, applies to all the photos in that import. Import each cemetery separately.
+* Your photos stay on your computer. See [[#Privacy|Privacy]].
+
+=== The worklist ===
+Everyone found on the stones appears on the worklist. The tabs show '''To do''', '''Need profile''' (no WikiTree ID yet), '''On WikiTree''' (they have an ID but still need the source added), '''Done''', '''Skipped''' and '''All'''. You can also choose an album and search by name or WikiTree ID.
+
+* '''Click a name''' to open that person's page.
+* The WikiTree column shows the ID when there is one, or whether the person was not found or is a possible match. Type an ID in the box to enter it.
+* '''Check WikiTree for all''' looks up everyone who does not have an ID yet.
+* The warning mark means the app is not sure of something on that stone, such as a letter it read two different ways, or a couple on one stone that it paired by position. Open the person to see why.
+* '''Export CSV''' saves the whole worklist.
+
+=== A person's page ===
+{{Image|file=Headstone_Tool.png|align=c|size=original|caption=A person's page: the photo, the fields to correct, the WikiTree match, the location and the source.}}
+
+* '''Person:''' given names, surname, maiden name, suffix, date of birth and date of death. Type dates as "1860", "Feb 1925" or "12 Feb 1925". Changes are saved as you type.
+* '''WikiTree ID:''' filled in for you when the match is strong, or enter it once the profile has been created. The Find a Grave memorial and FamilySearch ID can be entered as a number or pasted as a link.
+* '''Headstone photo on WikiTree:''' upload the photo to the person's WikiTree profile first, then paste the photo's link, its image page, or just the file name. It is turned into the address the plot map needs. One photo is shared by everyone on the same stone.
+* '''WikiTree match:''' the possible matches with their dates and places, and why each matched. Choose one with '''Use this ID'''. There are links to search WikiTree, Find a Grave and FamilySearch for the person, and an '''Add person''' button that opens WikiTree's Special:EditFamily page.
+* '''Location and photo:''' the GPS position and the date and time the photo was taken, read from the photo. They can be edited.
+* '''Cemetery Map details (optional):''' text boxes for the plot, monument (the heading on the stone), reference, section and row, for the [[Space:Cemetery_Map|Cemetery Map]] app. They are shared by everyone on the stone and become columns in the plot map table only when filled in.
+* '''Also on this stone:''' the other people on the same stone, and a button to add someone the app missed.
+* '''Re-read photo''' reads the stone again, which can help if the first reading was poor.
+
+=== The Monumental inscription source ===
+Each person's page ends with the source, in the form used for Monumental inscriptions on WikiTree:
+
+<pre>
+*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020.
+</pre>
+
+It gives the years as death (birth), the name with the surname first in capitals, the GPS position, and who took the photo and when. Click '''Copy citation''' and paste it into the Sources section of the profile.
+
+* Put '''your name and WikiTree ID''' in '''Settings''' once. Without them the source still has the date the photo was taken ("Photographed: taken 23 Nov 2020.") but not who took it.
+* The cemetery part (the Space page link and the town, county and state) comes from the cemetery you chose or the app found. Change it with '''edit cemetery''' on any person's page. Everyone in the same album shares it.
+
+=== Creating the profile with WikiTree Sourcer ===
+[[Space:WikiTree_Sourcer|WikiTree Sourcer]] can fill in the new profile for you:
+# On the person's page in the app, open Sourcer and choose '''Build Citation''', then '''Source'''.
+# On WikiTree, click '''Add person''' (the button on the person's page opens Special:EditFamily), and open Sourcer.
+# Choose '''Set Fields from Citation Data'''. Sourcer fills in the first name, last name at birth (the maiden name, if there is one), birth and death dates, and puts the Monumental inscription in the Sources section.
+
+If you choose '''Build Narrative with Citation''' instead, Sourcer also writes a sentence such as "David died on 12 February 1925 and was buried at Fairmont Cemetery, Raton, Colfax, New Mexico, United States of America." with the Monumental inscription as its reference.
+
+''Support for the app is not in the released Sourcer yet. I have proposed it to Sourcer as [https://github.com/RobPavey/wikitree-sourcer/pull/535 pull request 535]. Until it is added, it can be tried by loading a copy of Sourcer that includes it; the steps are in the [https://github.com/robinson27225/wikitree-headstone-tool#creating-the-wikitree-profile-with-sourcer README on GitHub].''
+
+== How a stone is read ==
+Headstones are hard to read: weathered stone, shadows, grass in the picture, lettering in many styles. The app reads each photo several times at different sizes and lets the readings vote, letter by letter, so one wrong letter in one reading is outvoted by the others. You can choose how many readings in '''Settings''' (3, 5 or 7; 5 is the default and takes about seven seconds a photo; 7 is more careful).
+
+{{Image|file=Headstone_Tool-1.png|align=c|size=original|caption=How a stone was read: the text found, and the lines where the readings differed. Here the readings did not agree on a name, so the person is marked to check.}}
+
+On a person's page, '''Text read from the photo''' shows exactly what was read, and the lines where the readings differed, with each reading. A yellow line is one the readings did not settle clearly; a grey line is a small difference that most readings agreed on.
+
+'''Treat every reading as a draft and check it against the photo.''' It is common to find a single wrong letter in a name, or a digit in a date that is hard to read even by eye.
+
+== Cemetery plot map ==
+This part is optional. Click '''Plot map…''' to prepare what the [[Space:Cemetery_Map|Cemetery Map]] app reads: a table of the people on the stones, with their GPS positions and headstone photos, to paste onto a WikiTree Space page.
+
+{{Image|file=Headstone_Tool-3.png|align=c|size=original|caption=Cemetery plot map: the table and the two categories, with checks before you publish.}}
+
+# '''Create the Space page''' (the dialog suggests a title like "Fairmont Cemetery Raton NM USA Plot Map Table" and links to it). It tells you whether the page exists yet, and which of the two categories it is missing.
+# '''Paste the table.''' People with a WikiTree ID appear as a link; people without one are kept as burials with their own names and dates, to be given an ID later. Rows without GPS are not placed on the map.
+# '''Add both categories:''' the cemetery's own WikiTree category (the app looks it up from the cemetery's Space page or from profiles already on WikiTree) and [[:Category:Plotting_Pages|Plotting Pages]].
+
+The dialog also warns about rows with no GPS, no headstone photo link or no WikiTree ID, and about names still marked to check. A TSV file can be downloaded for the Cemetery Map app's Import data.
+
+== Settings and your data ==
+* '''Photographer''' name and WikiTree ID go in the source. '''Default country''' is used for new albums.
+* '''Reading thoroughness''' (3, 5 or 7 readings).
+* '''Albums and cemeteries:''' change a cemetery's name, Space page, category, town, county, state or country at any time.
+* '''Your worklist is kept in your browser,''' on your computer, and not on WikiTree or any server. If you clear the browser's site data it is erased, so use '''Download backup (JSON)''' in Settings now and then. (There is no restore button yet.)
+
+== Privacy ==
+* '''Your photos never leave your computer.''' They are read inside your browser. The app keeps a smaller copy of each in your browser so you can see it again.
+* '''Sent to WikiTree:''' the names and dates the app looks up, to find matches and the cemetery's category. This is WikiTree's public API.
+* '''Sent to OpenStreetMap:''' the GPS position of the photos in an import (the middle of them, once), to find the cemetery, its town, county and state.
+* Nothing else is sent anywhere. The text reader and its models are loaded from the app's own folder on WikiTree's apps server.
+
+== Known limits ==
+* It is a beta. I have used it in Chrome on a desktop computer; it has not been tested on a phone or in other browsers yet.
+* '''Readings are not perfect.''' Single letters can be wrong ("McClain" read as "MCLAIN"), spaces can be lost ("GEORGE N" read as "GEORGEN"), and a hard-to-read digit may be wrong. A couple on one stone is paired left to right, and marked to check.
+* '''Photos with no GPS''' cannot give a cemetery or a GPS position.
+* '''HEIC photos:''' Safari opens them directly. Chrome and Firefox convert them first, which takes a little longer.
+* There is no restore for a backup yet, and the photos are not part of the backup.
+* The first time, the app loads about 16 MB of text-reading files; after that your browser remembers them.
+* Everyone importing needs the photo on WikiTree before the headstone photo link can be filled in: the app does not upload photos to WikiTree (apps cannot).
+
+== Version history ==
+* '''0.1.0 (22 October 2026):''' first version.
+
+== Feedback ==
+I would like to hear:
+* Anything that was confusing, broken or slow, and the version number from the bottom of the page.
+* Stones that were read wrongly: what the stone says, and what the app read. The text read from each photo is shown on its page.
+* Whether finding the cemetery from the GPS worked for your cemetery, and whether the Space page and category it found were the right ones.
+* Whether the Monumental inscription source is in the form you use.
+* Anything you would like added.
+
+Please comment on the [https://www.wikitree.com/g2g/2099318 G2G post], on this page, or send me a private message.
+
+== Thanks ==
+* [https://www.openstreetmap.org/copyright OpenStreetMap contributors] for the cemetery outlines and place names.
+* [https://github.com/PaddlePaddle/PaddleOCR PaddleOCR] for the text-reading models (Apache License 2.0).
+* Rob Pavey and everyone who works on [[Space:WikiTree_Sourcer|WikiTree Sourcer]].
+* The Cemeterist Project for the cemetery categories, and everyone who photographs headstones!
