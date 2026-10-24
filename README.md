@@ -144,18 +144,20 @@ The shared code is in `lib/` (loads in Node and in the browser), the page in `pu
 
 ## Creating the WikiTree profile with Sourcer
 
-`sourcer-support/headstone-site.patch` adds a `headstone` site to WikiTree Sourcer, using Sourcer's own `create_new_site`
-layout. Sourcer then reads a person page of this tool (the Mac version at `localhost:8777`, or the browser version in an
-apps-server folder named `headstone-tool`). It applies cleanly to Sourcer's `main` and `develop` branches and passes the whole
-Sourcer test suite. To try it without touching a branch you are working on, give it its own working folder:
+Support for this tool is proposed to WikiTree Sourcer as [pull request 535](https://github.com/RobPavey/wikitree-sourcer/pull/535).
+It adds a site with the id `wtahdstn` (Sourcer's maintainer asked for a `wta` prefix for WikiTree apps) that reads a person page of
+the browser version in an apps-server folder named `headstone-tool`, and narrows the `wikitree` site's patterns to
+`www.wikitree.com` and `staging.wikitree.com` so the two do not overlap. Until it is in a Sourcer release,
+`sourcer-support/headstone-site.patch` is the same change, made against Sourcer's `develop` branch. To try it without touching a
+branch you are working on, give it its own working folder:
 
     cd ~/code/wikitree-sourcer
-    git worktree add -b add-headstone-site ../wikitree-sourcer-headstone main
-    cd ../wikitree-sourcer-headstone
+    git worktree add -b add-wtahdstn-site ../wikitree-sourcer-wtahdstn upstream/develop
+    cd ../wikitree-sourcer-wtahdstn
     git apply /path/to/headstone-photo-tool/sourcer-support/headstone-site.patch
 
 Then in Chrome open `chrome://extensions`, switch off any other WikiTree Sourcer, choose **Load unpacked** and select
-`wikitree-sourcer-headstone/extension` (there is no build step). Open a person page of this tool, reload it, and click Sourcer in
+`wikitree-sourcer-wtahdstn/extension` (there is no build step). Open a person page of the tool, reload it, and click Sourcer in
 the toolbar; the first time, Sourcer asks for permission to use the site.
 
 **To add a person:**
@@ -179,14 +181,11 @@ Why this way: Sourcer's **Save Person Data** is offered only for profile pages, 
 (Build Citation, then Set Fields from Citation Data) is the right fit. The person page embeds the person as JSON
 (`<script id="headstone-person-data">`), which the Sourcer extract step reads.
 
-What the patch changes in Sourcer: the new `headstone` site (its own folder and tests) and the places Sourcer registers sites,
-plus five small edits to shared code, needed because the tool can run on `apps.wikitree.com`, which Sourcer's WikiTree site also
-claims, and on `localhost` with a port. The WikiTree site now steps aside on `headstone-tool` pages (`excludeMatches`, including when Sourcer injects its scripts into a
-page that is already open), the popup picks the last matching site as the rest of Sourcer already does, and URL matching ignores the port (Chrome match patterns
-cannot contain one). It passes Sourcer's whole test suite. It was also checked by loading it in Chrome: the extension registers,
-picks the headstone popup on a person page of the deployed copy, reads the person and offers Build Inline Citation, Build Narrative
-with Citation and Build Source Citation. The last step, Set Fields from Citation Data on a real WikiTree Add person page, needs a
-WikiTree login and has not been tried.
+What the change touches in Sourcer: the new `wtahdstn` site (its own folder and tests), the places Sourcer registers sites, and
+one line in the `wikitree` site's patterns. It passes Sourcer's whole test suite. It was also checked by loading it in Chrome: the
+extension registers, picks the tool's popup on a person page of the deployed copy, reads the person and offers Build Inline Citation,
+Build Narrative with Citation and Build Source Citation, and Set Fields from Citation Data was tried by hand on a real WikiTree
+Add person page. The Mac version (`localhost` with a port) is not supported: a Chrome match pattern cannot contain a port.
 
 ## Tests
 

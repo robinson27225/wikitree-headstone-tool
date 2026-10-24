@@ -1,205 +1,86 @@
 diff --git a/browser_variants/firefox/manifest.json b/browser_variants/firefox/manifest.json
-index 3951a8a..bfd3693 100644
+index 418cf029..c0a571aa 100644
 --- a/browser_variants/firefox/manifest.json
 +++ b/browser_variants/firefox/manifest.json
-@@ -130,6 +130,8 @@
-     "*://geneteka.genealodzy.pl/*",
-     "*://graves.eggsa.org/*",
-     "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost/*",
+@@ -117,6 +117,7 @@
+     "*://yorkshireburials.uk/*",
+     "*://www.yorkshireburials.uk/*",
+     "*://apps.bundesarchiv.de/gedenkbuch/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
-     "*://paperspast.natlib.govt.nz/*",
-     "*://probatesearch.service.gov.uk/*",
-     "*://recherche.archives.finistere.fr/ark:/*",
+     "*://archive.org/*",
+     "*://archives.novascotia.ca/vital-statistics/*",
+     "*://archives67.alsace.eu/ark:/*",
 diff --git a/browser_variants/safari/ios/manifest.json b/browser_variants/safari/ios/manifest.json
-index 92a2877..13033a9 100644
+index 935030de..2e1fbe2e 100644
 --- a/browser_variants/safari/ios/manifest.json
 +++ b/browser_variants/safari/ios/manifest.json
-@@ -131,6 +131,8 @@
-     "*://geneteka.genealodzy.pl/*",
-     "*://graves.eggsa.org/*",
-     "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost/*",
+@@ -118,6 +118,7 @@
+     "*://yorkshireburials.uk/*",
+     "*://www.yorkshireburials.uk/*",
+     "*://apps.bundesarchiv.de/gedenkbuch/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
-     "*://paperspast.natlib.govt.nz/*",
-     "*://probatesearch.service.gov.uk/*",
-     "*://recherche.archives.finistere.fr/ark:/*",
+     "*://archive.org/*",
+     "*://archives.novascotia.ca/vital-statistics/*",
+     "*://archives67.alsace.eu/ark:/*",
 diff --git a/browser_variants/safari/macos/manifest.json b/browser_variants/safari/macos/manifest.json
-index 1c7648d..87b1d5a 100644
+index a90124b5..4df9932b 100644
 --- a/browser_variants/safari/macos/manifest.json
 +++ b/browser_variants/safari/macos/manifest.json
-@@ -128,6 +128,8 @@
-     "*://geneteka.genealodzy.pl/*",
-     "*://graves.eggsa.org/*",
-     "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost/*",
+@@ -115,6 +115,7 @@
+     "*://yorkshireburials.uk/*",
+     "*://www.yorkshireburials.uk/*",
+     "*://apps.bundesarchiv.de/gedenkbuch/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
-     "*://paperspast.natlib.govt.nz/*",
-     "*://probatesearch.service.gov.uk/*",
-     "*://recherche.archives.finistere.fr/ark:/*",
-diff --git a/extension/base/browser/background/background_common.mjs b/extension/base/browser/background/background_common.mjs
-index 64f55cb..bd447c0 100644
---- a/extension/base/browser/background/background_common.mjs
-+++ b/extension/base/browser/background/background_common.mjs
-@@ -50,7 +50,9 @@ function doesUrlMatchChromePattern(pattern, url) {
-     .replace(/\*/g, ".*"); // Convert * to .*
- 
-   const regex = new RegExp(`^${regexString}$`);
--  return regex.test(url);
-+  // Chrome match patterns cannot contain a port and match any port, so ignore the port in the URL too
-+  // (otherwise a site on, say, localhost:8777 would never match its pattern)
-+  return regex.test(url.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/:?#]+):\d+/i, "$1"));
- }
- 
- async function handleGetPlatformInfoMessage(request, sendResponse) {
-diff --git a/extension/base/browser/background/background_content_scripts.mjs b/extension/base/browser/background/background_content_scripts.mjs
-index 0902e67..2c4616f 100644
---- a/extension/base/browser/background/background_content_scripts.mjs
-+++ b/extension/base/browser/background/background_content_scripts.mjs
-@@ -138,6 +138,16 @@ async function injectContentScriptsIntoExistingTabFrame(tab, contentScriptJs, fr
-   }
- }
- 
-+// A site can exclude pages that another site claims for itself (excludeMatches). The scripts that are registered
-+// honour that, so the scripts that are injected by hand into tabs that are already open must too.
-+function isExcludedByContentScript(contentScript, url) {
-+  return !!(
-+    contentScript.excludeMatches &&
-+    url &&
-+    contentScript.excludeMatches.some((pattern) => doesUrlMatchChromePattern(pattern, url))
-+  );
-+}
-+
- async function injectContentScriptsIntoTabsThatMatch(grantedOrigins) {
-   logDebug("grantedOrigins ", grantedOrigins);
- 
-@@ -161,6 +171,9 @@ async function injectContentScriptsIntoTabsThatMatch(grantedOrigins) {
-       for (const tab of tabs) {
-         // Find the content scripts for that site
-         for (let contentScript of contentScripts) {
-+          if (isExcludedByContentScript(contentScript, tab.url)) {
-+            continue;
-+          }
-           if (!injectedScripts.has(tab.id)) {
-             injectedScripts.set(tab.id, []);
-           }
-@@ -246,6 +259,9 @@ async function injectContentScriptsIntoExistingTabs(contentScripts) {
- 
-           // Inject the scripts into every matching tab
-           for (const tab of tabs) {
-+            if (isExcludedByContentScript(contentScript, tab.url)) {
-+              continue;
-+            }
-             if (contentScript.allFrames) {
-               // using "allFrames" as an indicator to target only matching frames
-               const frameResults = await chrome.scripting.executeScript({
-@@ -346,6 +362,10 @@ async function registerContentScripts() {
-         }
- 
-         let script = { id: id, matches: matches, js: js, runAt: runAt };
-+        if (siteData.excludeMatches) {
-+          // Pages that another site claims for itself (for example a site that runs on apps.wikitree.com)
-+          script.excludeMatches = siteData.excludeMatches;
-+        }
-         scripts.push(script);
- 
-         if (siteData.additionalContentScripts) {
-diff --git a/extension/base/browser/common/permissions.mjs b/extension/base/browser/common/permissions.mjs
-index 4260a2d..bc02c37 100644
---- a/extension/base/browser/common/permissions.mjs
-+++ b/extension/base/browser/common/permissions.mjs
-@@ -75,7 +75,8 @@ function doesUrlMatchChromePattern(pattern, url) {
- 
-   const regex = new RegExp(`^${regexString}$`);
- 
--  return regex.test(url);
-+  // Chrome match patterns cannot contain a port and match any port, so ignore the port in the URL too
-+  return regex.test(url.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/:?#]+):\d+/i, "$1"));
- }
- 
- async function getMatchingOptionalPattern(url) {
-diff --git a/extension/base/browser/popup/popup.mjs b/extension/base/browser/popup/popup.mjs
-index ea62ddd..6e38392 100644
---- a/extension/base/browser/popup/popup.mjs
-+++ b/extension/base/browser/popup/popup.mjs
-@@ -456,17 +456,29 @@ async function determineSiteNameForTab(activeTab) {
- 
-     logDebug("determineSiteNameForTab: contentScripts is ", contentScripts);
- 
-+    // Several sites can match one page (the Headstone Worklist runs on apps.wikitree.com, which the wikitree site also
-+    // matches). The last matching site is the one used, as in background_action.mjs, and a site's excludeMatches are honoured.
-+    let matchedScript = undefined;
-+    let matchedPattern = undefined;
-     for (let contentScript of contentScripts) {
-+      if (contentScript.excludeMatches && contentScript.excludeMatches.some((m) => doesUrlMatchChromePattern(m, url))) {
-+        continue;
-+      }
-       for (let match of contentScript.matches) {
-         let doesTabMatch = doesUrlMatchChromePattern(match, url);
- 
-         if (doesTabMatch) {
--          return await checkPermissionsForMatchedContentScript(activeTab, contentScript, match);
-+          matchedScript = contentScript;
-+          matchedPattern = match;
-+          break;
-         }
- 
-         logDebug("determineSiteNameForTab: no match is ", match, url);
-       }
-     }
-+    if (matchedScript) {
-+      return await checkPermissionsForMatchedContentScript(activeTab, matchedScript, matchedPattern);
-+    }
-   } catch (e) {
-     console.error("WikiTree Sourcer: error in determineSiteNameForTab. URL is: ", url, e);
- 
+     "*://archive.org/*",
+     "*://archives.novascotia.ca/vital-statistics/*",
+     "*://archives67.alsace.eu/ark:/*",
 diff --git a/extension/manifest.json b/extension/manifest.json
-index 770e1bf..9dfe3db 100644
+index 6bb2f5bc..3f7fcb90 100644
 --- a/extension/manifest.json
 +++ b/extension/manifest.json
-@@ -128,6 +128,8 @@
-     "*://geneteka.genealodzy.pl/*",
-     "*://graves.eggsa.org/*",
-     "*://librariestas.ent.sirsidynix.net.au/*",
-+    "*://localhost/*",
+@@ -115,6 +115,7 @@
+     "*://yorkshireburials.uk/*",
+     "*://www.yorkshireburials.uk/*",
+     "*://apps.bundesarchiv.de/gedenkbuch/*",
 +    "*://apps.wikitree.com/apps/*/headstone-tool/*",
-     "*://paperspast.natlib.govt.nz/*",
-     "*://probatesearch.service.gov.uk/*",
-     "*://recherche.archives.finistere.fr/ark:/*",
+     "*://archive.org/*",
+     "*://archives.novascotia.ca/vital-statistics/*",
+     "*://archives67.alsace.eu/ark:/*",
 diff --git a/extension/site/all/core/register_site_data.mjs b/extension/site/all/core/register_site_data.mjs
-index f30a659..324480a 100644
+index 96f86358..d25dc277 100644
 --- a/extension/site/all/core/register_site_data.mjs
 +++ b/extension/site/all/core/register_site_data.mjs
-@@ -101,3 +101,7 @@ import "../../wiewaswie/core/wiewaswie_site_data.mjs";
+@@ -103,6 +103,7 @@ import "../../wagovau/core/wagovau_site_data.mjs";
+ import "../../wiewaswie/core/wiewaswie_site_data.mjs";
  import "../../wikipedia/core/wikipedia_site_data.mjs";
  import "../../wikitree/core/wikitree_site_data.mjs";
++import "../../wtahdstn/core/wtahdstn_site_data.mjs";
  import "../../yadvashem/core/yadvashem_site_data.mjs";
-+
-+// Registered last on purpose. The Headstone Worklist can run on apps.wikitree.com, which the wikitree site also matches,
-+// and when several sites match a page the last one registered is used for the popup (see background_action.mjs).
-+import "../../headstone/core/headstone_site_data.mjs";
-diff --git a/extension/site/all/core/register_site_options.mjs b/extension/site/all/core/register_site_options.mjs
-index 73b542c..46e8a57 100644
---- a/extension/site/all/core/register_site_options.mjs
-+++ b/extension/site/all/core/register_site_options.mjs
-@@ -62,6 +62,7 @@ import "../../geneteka/core/geneteka_options.mjs";
- import "../../gensau/core/gensau_options.mjs";
- import "../../gro/core/gro_options.mjs";
- import "../../hathi/core/hathi_options.mjs";
-+import "../../headstone/core/headstone_options.mjs";
- import "../../irishg/core/irishg_options.mjs";
- import "../../itcadgg/core/itcadgg_options.mjs";
- import "../../jstor/core/jstor_options.mjs";
-diff --git a/extension/site/headstone/browser/headstone_content.js b/extension/site/headstone/browser/headstone_content.js
+ import "../../yorkshireburials/core/yorkshireburials_site_data.mjs";
+ import "../../youtube/core/youtube_site_data.mjs";
+diff --git a/extension/site/wikitree/core/wikitree_site_data.mjs b/extension/site/wikitree/core/wikitree_site_data.mjs
+index e3bc7b28..a3017ceb 100644
+--- a/extension/site/wikitree/core/wikitree_site_data.mjs
++++ b/extension/site/wikitree/core/wikitree_site_data.mjs
+@@ -26,7 +26,7 @@ import { registerSite } from "../../../base/core/site_registry.mjs";
+ 
+ const siteData = {
+   siteName: "wikitree",
+-  matches: ["*://*.wikitree.com/*"],
++  matches: ["*://www.wikitree.com/*", "*://staging.wikitree.com/*"],
+   repositoryName: "WikiTree",
+   usPhoneNumber: "",
+   email: "",
+diff --git a/extension/site/wtahdstn/browser/wtahdstn_content.js b/extension/site/wtahdstn/browser/wtahdstn_content.js
 new file mode 100644
-index 0000000..84df4de
+index 00000000..6e069ab8
 --- /dev/null
-+++ b/extension/site/headstone/browser/headstone_content.js
-@@ -0,0 +1,245 @@
++++ b/extension/site/wtahdstn/browser/wtahdstn_content.js
+@@ -0,0 +1,25 @@
 +/*
 +MIT License
 +
-+Copyright (c) 2020-2025 Robert M Pavey and the wikitree-sourcer contributors.
++Copyright (c) 2020 Robert M Pavey
 +
 +Permission is hereby granted, free of charge, to any person obtaining a copy
 +of this software and associated documentation files (the "Software"), to deal
@@ -220,232 +101,12 @@ index 0000000..84df4de
 +SOFTWARE.
 +*/
 +
-+////////////////////////////////////////////////////////////////////////////////
-+// Code for registering/unregistering tab with background
-+////////////////////////////////////////////////////////////////////////////////
-+
-+async function unregisterTabWithBackground() {
-+  //console.log("unregisterTabWithBackground");
-+
-+  // send message to background script that we have a headstone tab open
-+  let unregisterResponse = await chrome.runtime.sendMessage({
-+    type: "unregisterTab",
-+    siteName: "headstone",
-+    tab: registeredTabId,
-+  });
-+
-+  //console.log("headstone, response from unregisterTab message");
-+  //console.log(unregisterResponse);
-+
-+  if (chrome.runtime.lastError) {
-+    // possibly there is no background script loaded, this should never happen
-+    console.log("headstone: No response from background script, lastError message is:");
-+    console.log(chrome.runtime.lastError.message);
-+  }
-+}
-+
-+var registeredTabId = undefined;
-+
-+async function registerTabWithBackground() {
-+  // send message to background script that we have a headstone tab open
-+  // This can fail with the error:
-+  //  Uncaught (in promise) Error: Extension context invalidated.
-+  // if the extension has been updated. So we do a try/catch
-+  try {
-+    let registerResponse = await chrome.runtime.sendMessage({ type: "registerTab", siteName: "headstone" });
-+
-+    //console.log("headstone, response from registerTab message");
-+    //console.log(registerResponse);
-+
-+    // we remember the tabId because in Firefox when we try to unregister
-+    // the sender in the message receiver has no tab if the tab was closed already.
-+    if (registerResponse && registerResponse.tab) {
-+      registeredTabId = registerResponse.tab;
-+    }
-+
-+    if (chrome.runtime.lastError) {
-+      // possibly there is no background script loaded, this should never happen
-+      console.log("headstone: No response from background script, lastError message is:");
-+      console.log(chrome.runtime.lastError.message);
-+    } else {
-+      //console.log("addng event listener for unregister");
-+
-+      // NOTE: this listener does not get triggered on iOS when the X is pressed to close tab.
-+      // It is a known bug and no workaround is known. Not unregistering the tab doesn't cause
-+      // problems - an error is reported to console when it tries to reuse it but then it falls back
-+      // to opening a new tab.
-+      window.addEventListener("pagehide", function () {
-+        //console.log("pagehide event");
-+        unregisterTabWithBackground();
-+      });
-+    }
-+  } catch (error) {
-+    // possibly there is no background script loaded, this should never happen
-+    // Could also be that the extension was just reloaded/updated
-+    console.log("headstone: No response from background script, error is:");
-+    console.log(error);
-+  }
-+}
-+
-+////////////////////////////////////////////////////////////////////////////////
-+// Do the search
-+////////////////////////////////////////////////////////////////////////////////
-+
-+var pendingSearchData;
-+
-+async function getPendingSearch() {
-+  //console.log("getPendingSearch");
-+
-+  // Gets any pending search data from local storage
-+  return new Promise((resolve, reject) => {
-+    try {
-+      chrome.storage.local.get(["searchData"], function (value) {
-+        //console.log("getPendingSearch resolve");
-+        resolve(value.searchData);
-+      });
-+    } catch (ex) {
-+      console.log("getPendingSearch catch");
-+      reject(ex);
-+    }
-+  });
-+}
-+
-+function setSearchingBanner() {
-+  // Modify the page to say it is a WikiTree Sourcer search
-+  //!!!!!!!!!! CHANGES NEEDED HERE AFTER RUNNING create_new_site SCRIPT !!!!!!!!!!
-+  // insert code here to change the search page HTML to make it obvious that a
-+  // WikiTree Sourcer search is happening so that they don't start typing in the search form.
-+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-+}
-+
-+async function doPendingSearch() {
-+  //console.log("##############################################################################");
-+  //console.log("doPendingSearch: called");
-+  //console.log("doPendingSearch: URL is");
-+  //console.log(document.URL);
-+
-+  if (pendingSearchData) {
-+    let isRetry = pendingSearchData.isRetry;
-+    let fieldData = pendingSearchData.fieldData;
-+
-+    //console.log("doPendingSearch: fieldData is:");
-+    //console.log(fieldData);
-+    //console.log("doPendingSearch: isRetry is");
-+    //console.log(isRetry);
-+
-+    //!!!!!!!!!! CHANGES NEEDED HERE AFTER RUNNING create_new_site SCRIPT !!!!!!!!!!
-+    // insert code here to do the search by filling out the form and submitting it
-+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-+
-+    // clear the pending data so that we don't use it again on refine search
-+    pendingSearchData = undefined;
-+  }
-+}
-+
-+async function checkForPendingSearch() {
-+  //console.log("checkForPendingSearch: called");
-+  //console.log("checkForPendingSearch: document.referrer is: " + document.referrer);
-+
-+  if (document.referrer) {
-+    // when this page was opened by the extension referrer is an empty string
-+    return;
-+  }
-+
-+  //console.log("checkForPendingSearch: URL is");
-+  //console.log(document.URL);
-+
-+  let searchData = undefined;
-+  try {
-+    searchData = await getPendingSearch();
-+  } catch (error) {
-+    console.log("checkForPendingSearch: getPendingSearch reject");
-+  }
-+
-+  //console.log("checkForPendingSearch: searchData is:");
-+  //console.log(searchData);
-+
-+  if (searchData) {
-+    setSearchingBanner();
-+
-+    //console.log("checkForPendingSearch: got formValues:");
-+    //console.log(searchData);
-+
-+    let timeStamp = searchData.timeStamp;
-+    let timeStampNow = Date.now();
-+    let timeSinceSearch = timeStampNow - timeStamp;
-+
-+    //console.log("checkForPendingSearch: timeStamp is: " + timeStamp);
-+    //console.log("checkForPendingSearch: timeStampNow is: " + timeStampNow);
-+    //console.log("checkForPendingSearch: timeSinceSearch is: " + timeSinceSearch);
-+
-+    // It can take a long time to populate the page with the input fields
-+    if (timeSinceSearch < 50000) {
-+      pendingSearchData = searchData;
-+      doPendingSearch();
-+    }
-+
-+    // clear the search data no that we have set pendingSearchData
-+    chrome.storage.local.remove(["searchData"], function () {
-+      //console.log("cleared searchData");
-+    });
-+  }
-+}
-+
-+////////////////////////////////////////////////////////////////////////////////
-+// Top level functions
-+////////////////////////////////////////////////////////////////////////////////
-+
-+async function doSearchInExistingTab(request, sender, sendResponse) {
-+  //console.log("nswbdm: additionalMessageHandler, request is:");
-+  //console.log(request);
-+  //console.log("nswbdm: additionalMessageHandler, document.URL is:");
-+  //console.log(document.URL);
-+
-+  // We could try to check if this is the correct type of page (Births, Deaths etc)
-+  // and clear the fields and refill them. But it is simpler to just load the desired URL
-+  // into this existing tab.
-+
-+  try {
-+    // this stores the search data in local storage which is then picked up by the
-+    // content script in the new tab/window
-+    await chrome.storage.local.set({ searchData: request.searchData }, function () {
-+      //console.log("saved request.searchData, request.searchData is:");
-+      //console.log(request.searchData);
-+    });
-+  } catch (ex) {
-+    console.log("store of searchData failed");
-+  }
-+
-+  window.open(request.searchData.url, "_self");
-+  sendResponse({ success: true });
-+}
-+
-+// NOTE: this function must not be async
-+function additionalMessageHandler(request, sender, sendResponse) {
-+  if (request.type == "doSearchInExistingTab") {
-+    doSearchInExistingTab(request, sender, sendResponse);
-+    return { wasHandled: true, returnValue: true };
-+  }
-+
-+  return { wasHandled: false };
-+}
-+
-+async function checkForSearchThenInit() {
-+  checkForPendingSearch();
-+
-+  siteContentInit(
-+    "headstone",
-+    undefined, // overrideExtractHandler
-+    additionalMessageHandler
-+  );
-+}
-+
-+checkForSearchThenInit();
-diff --git a/extension/site/headstone/browser/headstone_extract_data.js b/extension/site/headstone/browser/headstone_extract_data.js
++siteContentInit("wtahdstn");
+diff --git a/extension/site/wtahdstn/browser/wtahdstn_extract_data.js b/extension/site/wtahdstn/browser/wtahdstn_extract_data.js
 new file mode 100644
-index 0000000..8b9cece
+index 00000000..057b6d0c
 --- /dev/null
-+++ b/extension/site/headstone/browser/headstone_extract_data.js
++++ b/extension/site/wtahdstn/browser/wtahdstn_extract_data.js
 @@ -0,0 +1,65 @@
 +/*
 +MIT License
@@ -473,8 +134,8 @@ index 0000000..8b9cece
 +
 +// No imports or requires allowed. See docs/dev_notes/extract_data_design
 +
-+// The Headstone Worklist person page embeds everything about the person as JSON in
-+// <script type="application/json" id="headstone-person-data">. See headstone-worklist/server.js.
++// The Headstone Photo Tool person page embeds everything about the person as JSON in
++// <script type="application/json" id="headstone-person-data">. See sourcerData() in lib/routes.js of https://github.com/robinson27225/wikitree-headstone-tool.
 +function extractData(document, url) {
 +  let result = { url: url, success: false };
 +
@@ -512,11 +173,11 @@ index 0000000..8b9cece
 +}
 +
 +// No exports allowed. See docs/dev_notes/extract_data_design
-diff --git a/extension/site/headstone/browser/headstone_popup.html b/extension/site/headstone/browser/headstone_popup.html
+diff --git a/extension/site/wtahdstn/browser/wtahdstn_popup.html b/extension/site/wtahdstn/browser/wtahdstn_popup.html
 new file mode 100644
-index 0000000..d586a1d
+index 00000000..b054665b
 --- /dev/null
-+++ b/extension/site/headstone/browser/headstone_popup.html
++++ b/extension/site/wtahdstn/browser/wtahdstn_popup.html
 @@ -0,0 +1,12 @@
 +<!DOCTYPE html>
 +<html>
@@ -527,14 +188,14 @@ index 0000000..d586a1d
 +    <nav id="menu" class="menu">
 +      <label class="messageLabel"> WikiTree Sourcer initializing menu ... </label>
 +    </nav>
-+    <script type="module" src="headstone_popup.mjs"></script>
++    <script type="module" src="wtahdstn_popup.mjs"></script>
 +  </body>
 +</html>
-diff --git a/extension/site/headstone/browser/headstone_popup.mjs b/extension/site/headstone/browser/headstone_popup.mjs
+diff --git a/extension/site/wtahdstn/browser/wtahdstn_popup.mjs b/extension/site/wtahdstn/browser/wtahdstn_popup.mjs
 new file mode 100644
-index 0000000..6e41858
+index 00000000..2f0ff6b1
 --- /dev/null
-+++ b/extension/site/headstone/browser/headstone_popup.mjs
++++ b/extension/site/wtahdstn/browser/wtahdstn_popup.mjs
 @@ -0,0 +1,42 @@
 +/*
 +MIT License
@@ -562,28 +223,28 @@ index 0000000..6e41858
 +
 +import { setupSimplePopupMenu } from "/base/browser/popup/popup_simple_base.mjs";
 +import { initPopup } from "/base/browser/popup/popup_init.mjs";
-+import { generalizeData } from "../core/headstone_generalize_data.mjs";
-+import { buildCitation } from "../core/headstone_build_citation.mjs";
++import { generalizeData } from "../core/wtahdstn_generalize_data.mjs";
++import { buildCitation } from "../core/wtahdstn_build_citation.mjs";
 +
-+async function setupHeadstonePopupMenu(extractedData) {
++async function setupWtahdstnPopupMenu(extractedData) {
 +  let input = {
 +    extractedData: extractedData,
-+    extractFailedMessage: "It looks like a Headstone Worklist page but not a record page.",
-+    generalizeFailedMessage: "It looks like a Headstone Worklist page but does not contain the required data.",
++    extractFailedMessage: "It looks like a Headstone Photo Tool page but not a record page.",
++    generalizeFailedMessage: "It looks like a Headstone Photo Tool page but does not contain the required data.",
 +    generalizeDataFunction: generalizeData,
 +    buildCitationFunction: buildCitation,
-+    siteNameToExcludeFromSearch: "headstone",
++    siteNameToExcludeFromSearch: "wtahdstn",
 +  };
 +  setupSimplePopupMenu(input);
 +}
 +
-+initPopup("headstone", setupHeadstonePopupMenu);
-diff --git a/extension/site/headstone/browser/headstone_popup_search.mjs b/extension/site/headstone/browser/headstone_popup_search.mjs
++initPopup("wtahdstn", setupWtahdstnPopupMenu);
+diff --git a/extension/site/wtahdstn/browser/wtahdstn_popup_search.mjs b/extension/site/wtahdstn/browser/wtahdstn_popup_search.mjs
 new file mode 100644
-index 0000000..7f83c79
+index 00000000..4ee98005
 --- /dev/null
-+++ b/extension/site/headstone/browser/headstone_popup_search.mjs
-@@ -0,0 +1,48 @@
++++ b/extension/site/wtahdstn/browser/wtahdstn_popup_search.mjs
+@@ -0,0 +1,26 @@
 +/*
 +MIT License
 +
@@ -608,35 +269,13 @@ index 0000000..7f83c79
 +SOFTWARE.
 +*/
 +
-+import { registerSearchMenuItemFromConfig } from "/base/browser/popup/popup_search_config.mjs";
-+
-+//////////////////////////////////////////////////////////////////////////////////////////
-+// Configuration
-+//////////////////////////////////////////////////////////////////////////////////////////
-+
-+const searchMenuConfig = {
-+  siteName: "headstone",
-+  siteDisplayName: "Headstone Worklist",
-+  localStorageConfig: {
-+    searchUrl: "https://put_your_search_url_here",
-+  },
-+  defaultMenuItem: {
-+    menuItemText: "Search Headstone Worklist",
-+    includeDefaultSearch: true,
-+    includeSearchSubmenu: false,
-+  },
-+};
-+
-+//////////////////////////////////////////////////////////////////////////////////////////
-+// Register the search menu - it can be used on the popup for lots of sites
-+//////////////////////////////////////////////////////////////////////////////////////////
-+
-+registerSearchMenuItemFromConfig(searchMenuConfig);
-diff --git a/extension/site/headstone/core/headstone_build_citation.mjs b/extension/site/headstone/core/headstone_build_citation.mjs
++// The Headstone Photo Tool has nothing to search, so there is no search menu item. This file is
++// still needed because the popup imports <site>_popup_search.mjs for every registered site.
+diff --git a/extension/site/wtahdstn/core/wtahdstn_build_citation.mjs b/extension/site/wtahdstn/core/wtahdstn_build_citation.mjs
 new file mode 100644
-index 0000000..142db36
+index 00000000..dbc876b0
 --- /dev/null
-+++ b/extension/site/headstone/core/headstone_build_citation.mjs
++++ b/extension/site/wtahdstn/core/wtahdstn_build_citation.mjs
 @@ -0,0 +1,67 @@
 +/*
 +MIT License
@@ -685,7 +324,7 @@ index 0000000..142db36
 +function buildCitation(input) {
 +  let citationObject = simpleBuildCitationWrapper(input, buildCoreCitation);
 +
-+  // The Headstone Worklist builds the full "*Monumental inscription. ..." source line (cemetery Space page, GPS,
++  // The Headstone Photo Tool builds the full "*Monumental inscription. ..." source line (cemetery Space page, GPS,
 +  // photographer) from its own settings. That line is the source for this person, so use it as it is, wrapped the
 +  // way Sourcer wraps the type that was asked for: a line in the Sources section (the normal home for this
 +  // citation), or a reference in the biography, after the burial sentence for the narrative type.
@@ -705,70 +344,11 @@ index 0000000..142db36
 +}
 +
 +export { buildCitation };
-diff --git a/extension/site/headstone/core/headstone_build_search_data.mjs b/extension/site/headstone/core/headstone_build_search_data.mjs
+diff --git a/extension/site/wtahdstn/core/wtahdstn_ed_reader.mjs b/extension/site/wtahdstn/core/wtahdstn_ed_reader.mjs
 new file mode 100644
-index 0000000..6f2e474
+index 00000000..1fff550e
 --- /dev/null
-+++ b/extension/site/headstone/core/headstone_build_search_data.mjs
-@@ -0,0 +1,53 @@
-+/*
-+MIT License
-+
-+Copyright (c) 2020-2025 Robert M Pavey and the wikitree-sourcer contributors.
-+
-+Permission is hereby granted, free of charge, to any person obtaining a copy
-+of this software and associated documentation files (the "Software"), to deal
-+in the Software without restriction, including without limitation the rights
-+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+copies of the Software, and to permit persons to whom the Software is
-+furnished to do so, subject to the following conditions:
-+
-+The above copyright notice and this permission notice shall be included in all
-+copies or substantial portions of the Software.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+SOFTWARE.
-+*/
-+
-+function buildSearchData(input) {
-+  const gd = input.generalizedData;
-+
-+  let fieldData = {};
-+  let selectData = {};
-+
-+  //!!!!!!!!!! CHANGES NEEDED HERE AFTER RUNNING create_new_site SCRIPT !!!!!!!!!!
-+  // Add code here to populate the search data that is used to fill out the search form
-+  // The fieldData typically will be used for text fields
-+  // while the selectData will be for select controls
-+  // In these structures use the names of the elements in the search form that need to be
-+  // filled
-+  // For examples see:
-+  // - extension/site/vicbdm/core/vicbdm_build_search_data.mjs
-+  // - extension/site/nswbdm/core/nswbdm_build_search_data.mjs
-+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-+
-+  //console.log("fieldData is:");
-+  //console.log(fieldData);
-+
-+  var result = {
-+    fieldData: fieldData,
-+    selectData: selectData,
-+  };
-+
-+  return result;
-+}
-+
-+export { buildSearchData };
-diff --git a/extension/site/headstone/core/headstone_ed_reader.mjs b/extension/site/headstone/core/headstone_ed_reader.mjs
-new file mode 100644
-index 0000000..190d112
---- /dev/null
-+++ b/extension/site/headstone/core/headstone_ed_reader.mjs
++++ b/extension/site/wtahdstn/core/wtahdstn_ed_reader.mjs
 @@ -0,0 +1,147 @@
 +/*
 +MIT License
@@ -813,7 +393,7 @@ index 0000000..190d112
 +  return month ? monthNames[month - 1] + " " + m[1] : m[1];
 +}
 +
-+class HeadstoneEdReader extends ExtractedDataReader {
++class WtahdstnEdReader extends ExtractedDataReader {
 +  constructor(ed) {
 +    super(ed);
 +
@@ -916,12 +496,12 @@ index 0000000..190d112
 +  }
 +}
 +
-+export { HeadstoneEdReader };
-diff --git a/extension/site/headstone/core/headstone_generalize_data.mjs b/extension/site/headstone/core/headstone_generalize_data.mjs
++export { WtahdstnEdReader };
+diff --git a/extension/site/wtahdstn/core/wtahdstn_generalize_data.mjs b/extension/site/wtahdstn/core/wtahdstn_generalize_data.mjs
 new file mode 100644
-index 0000000..e2416eb
+index 00000000..54a49470
 --- /dev/null
-+++ b/extension/site/headstone/core/headstone_generalize_data.mjs
++++ b/extension/site/wtahdstn/core/wtahdstn_generalize_data.mjs
 @@ -0,0 +1,34 @@
 +/*
 +MIT License
@@ -948,88 +528,20 @@ index 0000000..e2416eb
 +*/
 +
 +import { commonGeneralizeData } from "../../../base/core/generalize_data_creation.mjs";
-+import { HeadstoneEdReader } from "./headstone_ed_reader.mjs";
++import { WtahdstnEdReader } from "./wtahdstn_ed_reader.mjs";
 +
 +// This function generalizes the data extracted from the page content.
 +function generalizeData(input) {
-+  let edReader = new HeadstoneEdReader(input.extractedData);
-+  return commonGeneralizeData("headstone", edReader);
++  let edReader = new WtahdstnEdReader(input.extractedData);
++  return commonGeneralizeData("wtahdstn", edReader);
 +}
 +
 +export { generalizeData };
-diff --git a/extension/site/headstone/core/headstone_options.mjs b/extension/site/headstone/core/headstone_options.mjs
+diff --git a/extension/site/wtahdstn/core/wtahdstn_site_data.mjs b/extension/site/wtahdstn/core/wtahdstn_site_data.mjs
 new file mode 100644
-index 0000000..170e31d
+index 00000000..88086d58
 --- /dev/null
-+++ b/extension/site/headstone/core/headstone_options.mjs
-@@ -0,0 +1,62 @@
-+/*
-+MIT License
-+
-+Copyright (c) 2020-2025 Robert M Pavey and the wikitree-sourcer contributors.
-+
-+Permission is hereby granted, free of charge, to any person obtaining a copy
-+of this software and associated documentation files (the "Software"), to deal
-+in the Software without restriction, including without limitation the rights
-+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+copies of the Software, and to permit persons to whom the Software is
-+furnished to do so, subject to the following conditions:
-+
-+The above copyright notice and this permission notice shall be included in all
-+copies or substantial portions of the Software.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+SOFTWARE.
-+*/
-+
-+import {
-+  registerSubsectionForOptions,
-+  registerSubheadingForOptions,
-+  registerOptionsGroup,
-+  registerSiteSearchPopupOptionsGroup,
-+} from "../../../base/core/options/options_registry.mjs";
-+
-+const searchBehaviorOptionsGroup = {
-+  category: "search",
-+  subcategory: "headstone",
-+  tab: "search",
-+  subsection: "headstone",
-+  subheading: "behavior",
-+  options: [
-+    {
-+      optionName: "reuseExistingTab",
-+      type: "checkbox",
-+      label: "Do search in existing Headstone Worklist tab if present",
-+      defaultValue: true,
-+    },
-+  ],
-+};
-+
-+const citationOptionsGroup = {
-+  category: "citation",
-+  subcategory: "headstone",
-+  tab: "citation",
-+  subsection: "headstone",
-+  options: [],
-+};
-+
-+registerSubsectionForOptions("search", "headstone", "Headstone Worklist");
-+registerSiteSearchPopupOptionsGroup("headstone");
-+registerSubheadingForOptions("search", "headstone", "behavior", "Search Behavior");
-+registerOptionsGroup(searchBehaviorOptionsGroup);
-+
-+registerSubsectionForOptions("citation", "headstone", "Headstone Worklist");
-+registerOptionsGroup(citationOptionsGroup);
-diff --git a/extension/site/headstone/core/headstone_site_data.mjs b/extension/site/headstone/core/headstone_site_data.mjs
-new file mode 100644
-index 0000000..8ea5a5d
---- /dev/null
-+++ b/extension/site/headstone/core/headstone_site_data.mjs
++++ b/extension/site/wtahdstn/core/wtahdstn_site_data.mjs
 @@ -0,0 +1,41 @@
 +/*
 +MIT License
@@ -1058,9 +570,9 @@ index 0000000..8ea5a5d
 +import { registerSite } from "../../../base/core/site_registry.mjs";
 +
 +const siteData = {
-+  siteName: "headstone",
-+  matches: ["*://localhost/*", "*://apps.wikitree.com/apps/*/headstone-tool/*"],
-+  repositoryName: "Headstone Worklist",
++  siteName: "wtahdstn",
++  matches: ["*://apps.wikitree.com/apps/*/headstone-tool/*"],
++  repositoryName: "Headstone Photo Tool",
 +  usPhoneNumber: "",
 +  email: "",
 +  address: "",
@@ -1072,36 +584,27 @@ index 0000000..8ea5a5d
 +}
 +
 +register();
-diff --git a/extension/site/wikitree/core/wikitree_site_data.mjs b/extension/site/wikitree/core/wikitree_site_data.mjs
-index e3bc7b2..0a3a9ee 100644
---- a/extension/site/wikitree/core/wikitree_site_data.mjs
-+++ b/extension/site/wikitree/core/wikitree_site_data.mjs
-@@ -27,6 +27,8 @@ import { registerSite } from "../../../base/core/site_registry.mjs";
- const siteData = {
-   siteName: "wikitree",
-   matches: ["*://*.wikitree.com/*"],
-+  // The Headstone Worklist runs on apps.wikitree.com and has its own site; the WikiTree site must not also read those pages
-+  excludeMatches: ["*://apps.wikitree.com/apps/*/headstone-tool/*"],
-   repositoryName: "WikiTree",
-   usPhoneNumber: "",
-   email: "",
 diff --git a/scripts/run_test.js b/scripts/run_test.js
-index b9e78f2..b0d1300 100644
+index 65ecd975..f5dafade 100644
 --- a/scripts/run_test.js
 +++ b/scripts/run_test.js
-@@ -58,6 +58,7 @@ const siteNames = [
-   "gensau",
-   "gro",
-   "hathi",
-+  "headstone",
-   "irishg",
-   "itcadgg",
-   "jstor",
-diff --git a/unit_tests/headstone/citations/ref/david_lee_bears.json b/unit_tests/headstone/citations/ref/david_lee_bears.json
+@@ -96,9 +96,10 @@ const siteNames = [
+   "wiewaswie",
+   "wikipedia",
+   "wikitree",
++  "wtahdstn",
+   "yadvashem",
+   "yorkshireburials",
+-  "youtube",
++  "youtube"
+ ];
+ 
+ function testSuiteEnabled(parameters, testSuiteName) {
+diff --git a/unit_tests/wtahdstn/citations/ref/david_lee_bears.json b/unit_tests/wtahdstn/citations/ref/david_lee_bears.json
 new file mode 100755
-index 0000000..323e3a1
+index 00000000..323e3a10
 --- /dev/null
-+++ b/unit_tests/headstone/citations/ref/david_lee_bears.json
++++ b/unit_tests/wtahdstn/citations/ref/david_lee_bears.json
 @@ -0,0 +1,14 @@
 +{
 +  "std_inline": {
@@ -1118,11 +621,11 @@ index 0000000..323e3a1
 +  }
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/citations/ref/mary_a_moclain.json b/unit_tests/headstone/citations/ref/mary_a_moclain.json
+diff --git a/unit_tests/wtahdstn/citations/ref/mary_a_moclain.json b/unit_tests/wtahdstn/citations/ref/mary_a_moclain.json
 new file mode 100755
-index 0000000..22357fa
+index 00000000..22357fa0
 --- /dev/null
-+++ b/unit_tests/headstone/citations/ref/mary_a_moclain.json
++++ b/unit_tests/wtahdstn/citations/ref/mary_a_moclain.json
 @@ -0,0 +1,14 @@
 +{
 +  "std_inline": {
@@ -1139,11 +642,11 @@ index 0000000..22357fa
 +  }
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/extracted_data/ref/david_lee_bears.json b/unit_tests/headstone/extracted_data/ref/david_lee_bears.json
+diff --git a/unit_tests/wtahdstn/extracted_data/ref/david_lee_bears.json b/unit_tests/wtahdstn/extracted_data/ref/david_lee_bears.json
 new file mode 100755
-index 0000000..6906d67
+index 00000000..6906d676
 --- /dev/null
-+++ b/unit_tests/headstone/extracted_data/ref/david_lee_bears.json
++++ b/unit_tests/wtahdstn/extracted_data/ref/david_lee_bears.json
 @@ -0,0 +1,34 @@
 +{
 +  "url": "http://localhost:8777/person/969672412ee8",
@@ -1180,11 +683,11 @@ index 0000000..6906d67
 +  "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/extracted_data/ref/mary_a_moclain.json b/unit_tests/headstone/extracted_data/ref/mary_a_moclain.json
+diff --git a/unit_tests/wtahdstn/extracted_data/ref/mary_a_moclain.json b/unit_tests/wtahdstn/extracted_data/ref/mary_a_moclain.json
 new file mode 100755
-index 0000000..3381e9c
+index 00000000..3381e9cd
 --- /dev/null
-+++ b/unit_tests/headstone/extracted_data/ref/mary_a_moclain.json
++++ b/unit_tests/wtahdstn/extracted_data/ref/mary_a_moclain.json
 @@ -0,0 +1,34 @@
 +{
 +  "url": "http://localhost:8777/person/mary_a_moclain",
@@ -1221,14 +724,14 @@ index 0000000..3381e9c
 +  "citation": "*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/generalized_data/ref/david_lee_bears.json b/unit_tests/headstone/generalized_data/ref/david_lee_bears.json
+diff --git a/unit_tests/wtahdstn/generalized_data/ref/david_lee_bears.json b/unit_tests/wtahdstn/generalized_data/ref/david_lee_bears.json
 new file mode 100755
-index 0000000..798087c
+index 00000000..25a36511
 --- /dev/null
-+++ b/unit_tests/headstone/generalized_data/ref/david_lee_bears.json
++++ b/unit_tests/wtahdstn/generalized_data/ref/david_lee_bears.json
 @@ -0,0 +1,20 @@
 +{
-+  "sourceOfData": "headstone",
++  "sourceOfData": "wtahdstn",
 +  "sourceType": "record",
 +  "recordType": "Burial",
 +  "name": {
@@ -1248,14 +751,14 @@ index 0000000..798087c
 +  "hasValidData": true
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json b/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json
+diff --git a/unit_tests/wtahdstn/generalized_data/ref/mary_a_moclain.json b/unit_tests/wtahdstn/generalized_data/ref/mary_a_moclain.json
 new file mode 100755
-index 0000000..30433ba
+index 00000000..ce6118a0
 --- /dev/null
-+++ b/unit_tests/headstone/generalized_data/ref/mary_a_moclain.json
++++ b/unit_tests/wtahdstn/generalized_data/ref/mary_a_moclain.json
 @@ -0,0 +1,17 @@
 +{
-+  "sourceOfData": "headstone",
++  "sourceOfData": "wtahdstn",
 +  "sourceType": "record",
 +  "recordType": "Burial",
 +  "name": {
@@ -1272,12 +775,34 @@ index 0000000..30433ba
 +  "hasValidData": true
 +}
 \ No newline at end of file
-diff --git a/unit_tests/headstone/headstone_test.mjs b/unit_tests/headstone/headstone_test.mjs
+diff --git a/unit_tests/wtahdstn/saved_pages/david_lee_bears.html b/unit_tests/wtahdstn/saved_pages/david_lee_bears.html
 new file mode 100644
-index 0000000..a4af727
+index 00000000..c86d0974
 --- /dev/null
-+++ b/unit_tests/headstone/headstone_test.mjs
-@@ -0,0 +1,33 @@
++++ b/unit_tests/wtahdstn/saved_pages/david_lee_bears.html
+@@ -0,0 +1,5 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><title>Headstone Photo Tool</title></head><body>
++<h1 id="pname">David Lee Bears</h1>
++<script type="application/json" id="headstone-person-data">{"schema":"headstone-worklist/1","recordType":"MonumentalInscription","name":{"given":"David Lee","surname":"Bears","maiden":"","suffix":""},"birthDate":"1860-00-00","deathDate":"1925-02-12","cemetery":{"name":"Fairmont Cemetery","space":"Fairmont_Cemetery_Raton_NM_USA","city":"Raton","county":"Colfax","state":"New Mexico","country":"United States of America"},"gps":{"lat":36.90411666666667,"lon":-104.43029666666666},"photographed":{"by":{"name":"Azure Robinson","wikitreeId":"Robinson-27225"},"takenAt":"2020:11:23 07:48:44"},"inscription":"DAVID LEE BEARS\n1860 ~ 1925","ids":{"wikitree":"","findagrave":"12345678","familysearch":"ABCD-123"},"citation":"*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."}</script>
++</body></html>
+diff --git a/unit_tests/wtahdstn/saved_pages/mary_a_moclain.html b/unit_tests/wtahdstn/saved_pages/mary_a_moclain.html
+new file mode 100644
+index 00000000..caedfb2d
+--- /dev/null
++++ b/unit_tests/wtahdstn/saved_pages/mary_a_moclain.html
+@@ -0,0 +1,5 @@
++<!doctype html>
++<html lang="en"><head><meta charset="utf-8"><title>Headstone Photo Tool</title></head><body>
++<h1 id="pname">Mary A. Moclain</h1>
++<script type="application/json" id="headstone-person-data">{"schema":"headstone-worklist/1","recordType":"MonumentalInscription","name":{"given":"Mary A.","surname":"Moclain","maiden":"","suffix":""},"birthDate":"","deathDate":"1847-00-00","cemetery":{"name":"Fairmont Cemetery","space":"Fairmont_Cemetery_Raton_NM_USA","city":"Raton","county":"Colfax","state":"New Mexico","country":"United States of America"},"gps":{"lat":36.90414666666667,"lon":-104.430245},"photographed":{"by":{"name":"Azure Robinson","wikitreeId":"Robinson-27225"},"takenAt":"2020:11:23 07:48:28"},"inscription":"MARY A. MOCLAIN\n1847.\n1310","ids":{"wikitree":"","findagrave":"","familysearch":""},"citation":"*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."}</script>
++</body></html>
+diff --git a/unit_tests/wtahdstn/wtahdstn_test.mjs b/unit_tests/wtahdstn/wtahdstn_test.mjs
+new file mode 100644
+index 00000000..0519964a
+--- /dev/null
++++ b/unit_tests/wtahdstn/wtahdstn_test.mjs
+@@ -0,0 +1,31 @@
 +/*
 +MIT License
 +
@@ -1302,69 +827,18 @@ index 0000000..a4af727
 +SOFTWARE.
 +*/
 +
-+import * as test_content_and_citation from "./headstone_test_content_and_citation.mjs";
-+import * as test_build_search_data from "./headstone_test_build_search_data.mjs";
++import * as test_content_and_citation from "./wtahdstn_test_content_and_citation.mjs";
 +
 +async function runTests(testManager) {
 +  await test_content_and_citation.runTests(testManager);
-+  await test_build_search_data.runTests(testManager);
 +}
 +
 +export { runTests };
-diff --git a/unit_tests/headstone/headstone_test_build_search_data.mjs b/unit_tests/headstone/headstone_test_build_search_data.mjs
+diff --git a/unit_tests/wtahdstn/wtahdstn_test_content_and_citation.mjs b/unit_tests/wtahdstn/wtahdstn_test_content_and_citation.mjs
 new file mode 100644
-index 0000000..bafe314
+index 00000000..0581dd17
 --- /dev/null
-+++ b/unit_tests/headstone/headstone_test_build_search_data.mjs
-@@ -0,0 +1,43 @@
-+/*
-+MIT License
-+
-+Copyright (c) 2020-2025 Robert M Pavey and the wikitree-sourcer contributors.
-+
-+Permission is hereby granted, free of charge, to any person obtaining a copy
-+of this software and associated documentation files (the "Software"), to deal
-+in the Software without restriction, including without limitation the rights
-+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+copies of the Software, and to permit persons to whom the Software is
-+furnished to do so, subject to the following conditions:
-+
-+The above copyright notice and this permission notice shall be included in all
-+copies or substantial portions of the Software.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+SOFTWARE.
-+*/
-+
-+import { buildSearchData } from "../../extension/site/headstone/core/headstone_build_search_data.mjs";
-+import { runBuildSearchDataTests } from "../test_utils/test_build_search_utils.mjs";
-+
-+const regressionData = [
-+  /*
-+  {
-+    // has pref name
-+    caseName: "wikitree_stanway-252_read",
-+    inputPath: "wikitree/generalized_data/ref/stanway-252_read",
-+    typeOfSearch: "Births",
-+  },
-+  */
-+];
-+
-+async function runTests(testManager) {
-+  await runBuildSearchDataTests("headstone", buildSearchData, regressionData, testManager);
-+}
-+
-+export { runTests };
-diff --git a/unit_tests/headstone/headstone_test_content_and_citation.mjs b/unit_tests/headstone/headstone_test_content_and_citation.mjs
-new file mode 100644
-index 0000000..29bcb41
---- /dev/null
-+++ b/unit_tests/headstone/headstone_test_content_and_citation.mjs
++++ b/unit_tests/wtahdstn/wtahdstn_test_content_and_citation.mjs
 @@ -0,0 +1,54 @@
 +/*
 +MIT License
@@ -1390,8 +864,8 @@ index 0000000..29bcb41
 +SOFTWARE.
 +*/
 +
-+import { generalizeData } from "../../extension/site/headstone/core/headstone_generalize_data.mjs";
-+import { buildCitation } from "../../extension/site/headstone/core/headstone_build_citation.mjs";
++import { generalizeData } from "../../extension/site/wtahdstn/core/wtahdstn_generalize_data.mjs";
++import { buildCitation } from "../../extension/site/wtahdstn/core/wtahdstn_build_citation.mjs";
 +
 +import { runExtractDataTests } from "../test_utils/test_extract_data_utils.mjs";
 +import { runGeneralizeDataTests } from "../test_utils/test_generalize_data_utils.mjs";
@@ -1411,34 +885,12 @@ index 0000000..29bcb41
 +];
 +
 +async function runTests(testManager) {
-+  await runExtractDataTests("headstone", regressionData, testManager);
++  await runExtractDataTests("wtahdstn", regressionData, testManager);
 +
-+  await runGeneralizeDataTests("headstone", generalizeData, regressionData, testManager);
++  await runGeneralizeDataTests("wtahdstn", generalizeData, regressionData, testManager);
 +
 +  const functions = { buildCitation: buildCitation };
-+  await runBuildCitationTests("headstone", functions, regressionData, testManager);
++  await runBuildCitationTests("wtahdstn", functions, regressionData, testManager);
 +}
 +
 +export { runTests };
-diff --git a/unit_tests/headstone/saved_pages/david_lee_bears.html b/unit_tests/headstone/saved_pages/david_lee_bears.html
-new file mode 100644
-index 0000000..de27d17
---- /dev/null
-+++ b/unit_tests/headstone/saved_pages/david_lee_bears.html
-@@ -0,0 +1,5 @@
-+<!doctype html>
-+<html lang="en"><head><meta charset="utf-8"><title>Headstone Worklist</title></head><body>
-+<h1 id="pname">David Lee Bears</h1>
-+<script type="application/json" id="headstone-person-data">{"schema":"headstone-worklist/1","recordType":"MonumentalInscription","name":{"given":"David Lee","surname":"Bears","maiden":"","suffix":""},"birthDate":"1860-00-00","deathDate":"1925-02-12","cemetery":{"name":"Fairmont Cemetery","space":"Fairmont_Cemetery_Raton_NM_USA","city":"Raton","county":"Colfax","state":"New Mexico","country":"United States of America"},"gps":{"lat":36.90411666666667,"lon":-104.43029666666666},"photographed":{"by":{"name":"Azure Robinson","wikitreeId":"Robinson-27225"},"takenAt":"2020:11:23 07:48:44"},"inscription":"DAVID LEE BEARS\n1860 ~ 1925","ids":{"wikitree":"","findagrave":"12345678","familysearch":"ABCD-123"},"citation":"*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1925 (1860). BEARS, David Lee. GPS: 36.904117, -104.430297. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."}</script>
-+</body></html>
-diff --git a/unit_tests/headstone/saved_pages/mary_a_moclain.html b/unit_tests/headstone/saved_pages/mary_a_moclain.html
-new file mode 100644
-index 0000000..c113ca9
---- /dev/null
-+++ b/unit_tests/headstone/saved_pages/mary_a_moclain.html
-@@ -0,0 +1,5 @@
-+<!doctype html>
-+<html lang="en"><head><meta charset="utf-8"><title>Headstone Worklist</title></head><body>
-+<h1 id="pname">Mary A. Moclain</h1>
-+<script type="application/json" id="headstone-person-data">{"schema":"headstone-worklist/1","recordType":"MonumentalInscription","name":{"given":"Mary A.","surname":"Moclain","maiden":"","suffix":""},"birthDate":"","deathDate":"1847-00-00","cemetery":{"name":"Fairmont Cemetery","space":"Fairmont_Cemetery_Raton_NM_USA","city":"Raton","county":"Colfax","state":"New Mexico","country":"United States of America"},"gps":{"lat":36.90414666666667,"lon":-104.430245},"photographed":{"by":{"name":"Azure Robinson","wikitreeId":"Robinson-27225"},"takenAt":"2020:11:23 07:48:28"},"inscription":"MARY A. MOCLAIN\n1847.\n1310","ids":{"wikitree":"","findagrave":"","familysearch":""},"citation":"*Monumental inscription. United States of America. [[Space:Fairmont_Cemetery_Raton_NM_USA|Fairmont Cemetery]], Raton, Colfax, New Mexico. 1847. MOCLAIN, Mary A. GPS: 36.904147, -104.430245. Photographed by: [[Robinson-27225|Azure Robinson]]: taken 23 Nov 2020."}</script>
-+</body></html>
