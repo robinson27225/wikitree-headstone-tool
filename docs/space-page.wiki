@@ -49,7 +49,7 @@ Everyone found on the stones appears on the worklist. The tabs show '''To do''',
 
 * '''Person:''' given names, surname, maiden name, suffix, date of birth and date of death. Type dates as "1860", "Feb 1925" or "12 Feb 1925". Changes are saved as you type.
 * '''WikiTree ID:''' filled in for you when the match is strong, or enter it once the profile has been created. The Find a Grave memorial and FamilySearch ID can be entered as a number or pasted as a link.
-* '''Headstone photo on WikiTree:''' upload the photo to the person's WikiTree profile first, then paste the photo's link, its image page, or just the file name. It is turned into the address the plot map needs. One photo is shared by everyone on the same stone.
+* '''Headstone photo link:''' paste a WikiTree photo link, its image page, or just the file name (upload the photo to the person's WikiTree profile first). A Google Drive link also works (share the file with "anyone with the link"), and so does a Google Photos link, which the plot map shows as an "Open the photo" link rather than a picture. WikiTree and Drive links are turned into the address the plot map needs and show a preview. One photo is shared by everyone on the same stone.
 * '''WikiTree match:''' the possible matches with their dates and places, and why each matched. Choose one with '''Use this ID'''. There are links to search WikiTree, Find a Grave and FamilySearch for the person, and an '''Add person''' button that opens WikiTree's Special:EditFamily page.
 * '''Location and photo:''' the GPS position and the date and time the photo was taken, read from the photo. They can be edited.
 * '''Cemetery Map details (optional):''' text boxes for the plot, monument (the heading on the stone), reference, section and row, for the [[Space:Cemetery_Map|Cemetery Map]] app. They are shared by everyone on the stone and become columns in the plot map table only when filled in.
@@ -117,7 +117,7 @@ The dialog also warns about rows with no GPS, no headstone photo link or no Wiki
 * '''HEIC photos:''' Safari opens them directly. Chrome and Firefox convert them first, which takes a little longer.
 * There is no restore for a backup yet, and the photos are not part of the backup.
 * The first time, the app loads about 16 MB of text-reading files; after that your browser remembers them.
-* Everyone importing needs the photo on WikiTree before the headstone photo link can be filled in: the app does not upload photos to WikiTree (apps cannot).
+* The headstone photo link needs the photo to be online already (WikiTree, Google Drive or Google Photos): the app does not upload photos anywhere. Google Photos share pages cannot be shown as a picture.
 
 == Version history ==
 * '''0.1.0 (22 October 2026):''' first version.

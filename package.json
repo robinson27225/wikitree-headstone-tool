@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "./start.sh",
-    "test": "node test/parse.test.js && node test/merge.test.js && node test/categories.test.js && node test/citation.test.js && node test/places.test.js",
+    "test": "node test/parse.test.js && node test/merge.test.js && node test/categories.test.js && node test/citation.test.js && node test/places.test.js && node test/photoref.test.js",
     "build:web": "node scripts/build-web.js",
     "serve:web": "node scripts/serve-web.js",
     "assets": "node scripts/make-logo.js && node scripts/render-assets.js",

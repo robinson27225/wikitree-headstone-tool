@@ -98,8 +98,10 @@ WikiTree Space page, using the same columns and cell wrappers it writes itself:
    on profiles from the album that are already on WikiTree. It is saved on the album; "Look up again" or the button in the
    cemetery dialog refreshes it, and you can type one yourself. If nothing is found the dialog says the category is a guess.
    The dialog also asks WikiTree whether the table page exists yet and which of the two categories it is missing.
-3. Per stone (shared by everyone on it): **Headstone photo on WikiTree** is a main field on the person page. Paste a photo
-   link, an image page, or just the file name (`Bears-1.jpg`); it is turned into the `photo.php` address the map uses. Section,
+3. Per stone (shared by everyone on it): **Headstone photo link** is a main field on the person page. Paste a WikiTree photo
+   link, image page or just the file name (`Bears-1.jpg`); it is turned into the `photo.php` address the map uses. A Google Drive
+   link (any share form) is tidied to `drive.google.com/file/d/<id>/view` (share the file with "anyone with the link") and shows a preview
+   here. A Google Photos link is kept as typed; the map shows it as an "Open the photo" link. Section,
    Plot, Row, Monument and Reference are in the "Cemetery Map details" card (optional text boxes) and become columns only when some row has a value.
 4. People with a WikiTree ID are written as `[[ID]]` (the map takes their names from WikiTree). People without one are kept as
    burials with their own names and dates and show under "Needs WikiTree ID" on the map. Skipped people are left out.

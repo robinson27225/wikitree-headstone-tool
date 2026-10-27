@@ -106,7 +106,7 @@ function renderList() {
       <input id="f-q" type="search" placeholder="Search names or IDs" value="${esc(view.q)}">
       <span class="spacer"></span><span class="muted">${rows.length} shown</span>
     </div>
-    <table><thead><tr><th></th><th>Name</th><th>Born</th><th>Died</th><th>WikiTree</th><th>Find a Grave</th><th>FamilySearch</th><th>WT photo</th><th>Status</th><th></th></tr></thead>
+    <table><thead><tr><th></th><th>Name</th><th>Born</th><th>Died</th><th>WikiTree</th><th>Find a Grave</th><th>FamilySearch</th><th>Photo</th><th>Status</th><th></th></tr></thead>
     <tbody>${rows.map((p) => `<tr data-id="${p.id}">
       <td class="thumb"><a href="${personHref(p.id)}"><img loading="lazy" src="${thumbSrc(p.stoneId)}" alt=""></a></td>
       <td><a class="name" href="${personHref(p.id)}">${esc(fullName(p))}</a>${p.maiden ? `<div class="sub">née ${esc(p.maiden)}</div>` : ''}<div class="sub">${esc(batchOf(p.batchId).cemetery.name || batchOf(p.batchId).name || '')}</div></td>
@@ -168,10 +168,10 @@ async function renderPerson(id) {
           <div class="full"><label for="f-wt">WikiTree ID</label><div class="idrow"><input id="f-wt" data-k="wikitreeId" value="${esc(p.wikitreeId)}" placeholder="Surname-123">${p.wikitreeId ? `<a id="wtlink" target="_blank" rel="noopener" href="${wtUrl(p.wikitreeId)}">Open ↗</a>` : ''}</div></div>
           <div><label for="f-fg">Find a Grave memorial</label><div class="idrow"><input id="f-fg" data-k="findagrave" value="${esc(p.findagrave)}" placeholder="ID or URL">${p.findagrave ? `<a target="_blank" rel="noopener" href="https://www.findagrave.com/memorial/${esc(p.findagrave)}">Open ↗</a>` : ''}</div></div>
           <div><label for="f-fs">FamilySearch ID</label><div class="idrow"><input id="f-fs" data-k="familysearch" value="${esc(p.familysearch)}" placeholder="ID or URL">${p.familysearch ? `<a target="_blank" rel="noopener" href="https://ancestors.familysearch.org/en/${esc(p.familysearch)}">Open ↗</a>` : ''}</div></div>
-          <div class="full"><label for="f-photo">Headstone photo on WikiTree</label>
-            <div class="idrow"><input id="f-photo" data-stone="photoUrl" value="${esc(st.photoUrl)}" placeholder="Paste the photo's link, its image page, or file name (Bears-1.jpg)">${st.photoUrl ? `<a target="_blank" rel="noopener" href="${esc(d.photoPage || st.photoUrl)}">Open ↗</a>` : ''}</div>
-            <div class="muted" style="font-size:12px;margin-top:3px">Upload the photo to the person's WikiTree profile first. One photo is shared by everyone on this stone.</div>
-            ${st.photoUrl ? `<img class="wtphoto" src="${esc(st.photoUrl)}" alt="Headstone photo on WikiTree" onerror="this.remove()" style="margin-top:6px;max-height:110px;border-radius:6px;display:block">` : ''}</div>
+          <div class="full"><label for="f-photo">Headstone photo link</label>
+            <div class="idrow"><input id="f-photo" data-stone="photoUrl" value="${esc(st.photoUrl)}" placeholder="WikiTree image link or file name (Bears-1.jpg), Google Drive link, or Google Photos link">${st.photoUrl ? `<a target="_blank" rel="noopener" href="${esc(d.photoPage || st.photoUrl)}">Open ↗</a>` : ''}</div>
+            <div class="muted" style="font-size:12px;margin-top:3px">${{ drive: 'Google Drive: share the file with “anyone with the link” so the plot map can show it.', gphotos: 'Google Photos: the plot map shows this as an “Open the photo” link (a picture needs a WikiTree or Google Drive link).' }[d.photoKind] || 'Upload the photo to the person’s WikiTree profile or Google Drive first. One photo is shared by everyone on this stone.'}</div>
+            ${d.photoPreview ? `<img class="wtphoto" src="${esc(d.photoPreview)}" alt="Headstone photo" referrerpolicy="no-referrer" onerror="this.insertAdjacentHTML('afterend','<div class=muted style=font-size:12px>No preview available. The photo may be private; use Open ↗ to check it.</div>');this.remove()" style="margin-top:6px;max-height:110px;border-radius:6px;display:block">` : ''}</div>
           <div class="full"><label for="f-notes">Notes</label><textarea id="f-notes" data-k="notes" rows="2">${esc(p.notes)}</textarea></div>
           <div><label for="f-status">Status</label><select id="f-status" data-k="status"><option value="todo" ${p.status === 'todo' ? 'selected' : ''}>To do</option><option value="done" ${p.status === 'done' ? 'selected' : ''}>Done</option><option value="skip" ${p.status === 'skip' ? 'selected' : ''}>Skip</option></select></div>
         </div>
